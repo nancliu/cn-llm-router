@@ -1,0 +1,87 @@
+# 任务类别唯一事实源（ADR 词汇表：类别定义）
+# as_of: 2026-09-23
+categories:
+- id: programming
+  name: 程序编码
+  description: 编写、修改或生成程序代码：写函数/算法/脚本、实现功能、生成代码片段、补全代码。
+  examples:
+  - 帮我写一个Python函数解析JSON
+  - 用Go实现一个LRU缓存
+  - 生成一段批量重命名文件的shell脚本
+- id: frontend_ux
+  name: 前端UX设计
+  description: 网页/应用的界面设计与交互体验：HTML/CSS布局、组件样式、页面动效、UI设计、用户体验优化。
+  examples:
+  - 做一个登录页的HTML+CSS
+  - 这个按钮的hover效果怎么写
+  - 帮我把这个页面改成深色主题
+- id: document_writing
+  name: 文书撰写
+  description: 撰写正式文书与公文：通知、报告、方案、合同、纪要、公文格式的写作与排版。
+  examples:
+  - 写一份项目周报
+  - 起草会议纪要模板
+  - 写一份活动策划方案
+- id: data_analysis
+  name: 数据分析
+  description: 数据处理与统计分析：表格处理、聚合透视、指标计算、可视化图表、数据解读。
+  examples:
+  - 分析这份销售数据的趋势
+  - 用SQL统计每日订单量
+  - 给这些数字做个透视表
+- id: math_reasoning
+  name: 数学推理
+  description: 数学问题求解与严谨推理：代数、微积分、概率统计、逻辑证明、推导计算。
+  examples:
+  - 求解这个积分
+  - 证明费马小定理
+  - 计算这个概率题
+- id: agent_orchestration
+  name: Agent编排
+  description: 多智能体/工具调用编排：规划子任务、拆解流程、调用工具、串联模型协作。
+  examples:
+  - 把这个任务拆成三个子agent执行
+  - 帮我规划一个多步骤的数据抓取流程
+  - 写一个工具调用链
+- id: long_doc
+  name: 长文档处理
+  description: 长文本的阅读、摘要、结构化提取：论文、报告、合同、书籍的理解与归纳。
+  examples:
+  - 总结这篇论文的核心观点
+  - 提取这份合同的条款清单
+  - 给这50页报告写个摘要
+- id: translation
+  name: 翻译润色
+  description: 跨语言翻译与文本润色：中英互译、语气调整、表述优化、术语统一。
+  examples:
+  - 把这段中文翻译成英文
+  - 帮我润色这段英文邮件
+  - 翻译并优化这条产品描述
+- id: multimodal
+  name: 多模态理解
+  description: 图像/音频/视频等多模态内容的识别、理解与描述：看图说话、OCR、图片问答。
+  examples:
+  - 识别这张图片里的文字
+  - 描述这张图的内容
+  - 这个产品图里的瑕疵在哪里
+- id: qa_retrieval
+  name: 知识问答/检索
+  description: 知识问答与信息检索：百科问题、概念解释、资料查找、基于知识的回答。
+  examples:
+  - 解释什么是贝叶斯定理
+  - 查一下2026年诺贝尔奖得主
+  - 量子计算和经典计算的区别
+- id: creative
+  name: 创意生成
+  description: 创意内容创作：文案、故事、点子、命名、营销创意、头脑风暴。
+  examples:
+  - 给新奶茶店起10个名字
+  - 写一个悬疑短篇的开头
+  - 为新品想一句广告语
+- id: code_review
+  name: 代码审查与调试
+  description: 代码审查与调试：找bug、解释报错、审查代码质量、优化性能、补测试。
+  examples:
+  - 这段代码为什么报错
+  - 审查这个PR的代码质量
+  - 帮我的函数做性能优化

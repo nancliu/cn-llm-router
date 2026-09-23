@@ -1,0 +1,16 @@
+﻿logical_name,vendor,version,open_source,license,context_window,price_in,price_out,cache_price,platform,architecture,source_url,as_of
+DeepSeek-V4-Pro-0813,深度求索 DeepSeek,2026-08-13,开源,MIT,1M tokens (max output 384K),9.0,27.0,0.3,DeepSeek官方/火山方舟,MoE 1.6T总参/49B激活；不支持图像输入,https://api-docs.deepseek.com/zh-cn/quick_start/pricing/ ; https://www.superclueai.com/generalpage,2026-09-23
+DeepSeek-V4-Flash-0731,深度求索 DeepSeek,2026-07-31,开源,MIT,1M tokens,3.0,9.0,0.1,火山方舟,284B总参/13B激活 MoE,https://docs.volcengine.com/docs/82379/1544106 ; https://www.superclueai.com/generalpage,2026-09-23
+DeepSeek-V4.1-Flash-CED,深度求索 DeepSeek,2026-09-10,开源,MIT,1M tokens (max output 384K),2.0,8.0,0.04,DeepSeek官方,552B MoE CED非对称结构；原生多模态(prefill 8B/decode 16B),https://api-docs.deepseek.com/zh-cn/quick_start/pricing/ ; https://www.superclueai.com/generalpage,2026-09-23
+Qwen3.8-Max-0902,阿里巴巴,2026-09-10,待核实,待核实,1M tokens (max output 131K),12.0,36.0,1.5,阿里云百炼,2.4T MoE/95B激活；原生多模态(文本+图像+视频),https://help.aliyun.com/en/model-studio/qwen3-8-max ; https://www.superclueai.com/generalpage,2026-09-23
+Kimi-K3,月之暗面 Moonshot AI,2026-07-16,开源,Kimi K3 License (近MIT),1M tokens,20.0,100.0,2.0,Kimi官方,2.8T MoE/104B激活；原生多模态,https://platform.kimi.com/ ; https://www.superclueai.com/generalpage,2026-09-23
+Kimi-K2.7-Code,月之暗面 Moonshot AI,待补充,待补充,待补充,待补充,6.5,27.0,1.3,Kimi官方,编码专用模型；火山方舟kimi-latest别名指向此型号,https://platform.kimi.com/,2026-09-23
+GLM-5.2,智谱 AI,2026-06-17,开源,待补充,1M tokens 无损,8.0,28.0,2.0,智谱AI,待补充,https://bigmodel.cn/pricing ; https://www.superclueai.com/generalpage,2026-09-23
+GLM-5.3,智谱 AI,2026-09上旬,开源,待补充,1M tokens (仅文本),8.0,28.0,2.0,智谱AI,旗舰文本模型,https://bigmodel.cn/pricing ; https://www.superclueai.com/generalpage,2026-09-23
+GLM-5.3-Flash,智谱 AI,2026-08-26,开源,待补充,1M tokens,0.8,2.8,0.23,智谱AI,320B-A18B；原生多模态(图/视频/文件/文本),https://bigmodel.cn/pricing ; https://www.superclueai.com/generalpage,2026-09-23
+豆包Seed-2.1-Pro,字节跳动,2026-06-23,闭源,闭源,待核实(256k vs 1024k),6.0,30.0,1.2,火山方舟,high档；同系列turbo/lite,https://docs.volcengine.com/docs/82379/1544106 ; https://www.superclueai.com/generalpage,2026-09-23
+Seedream-5.0,字节跳动,2026-06-23,闭源,闭源,N/A (图像生成),,,,火山方舟,"图像生成模型(文生图/图生图)，非LLM；0.22元/张lite, 0.30元/张pro起",https://ark.volcengine.com/region:cn-beijing/model/detail?name=doubao-seedream-5-0,2026-09-23
+腾讯混元Hy3,腾讯,2026-07-06,开源,Apache 2.0,待补充,1.0,4.0,0.25,腾讯云TokenHub,快慢思考混合MoE 295B/21B,https://cloud.tencent.com/document/product/1823/130055 ; https://www.superclueai.com/generalpage,2026-09-23
+腾讯混元Hy4-preview,腾讯,2026-08-28,开源,待补充,1M (max input 960K/output 64K),6.0,18.0,0.3,腾讯云TokenHub,770B总参/49B激活MoE；稀疏注意力+多流残差重构,https://cloud.tencent.com/document/product/1823/130055 ; http://www.news.cn/tech/20260828/b12d8417291b4193ba9e5d435a1a40db/c.html,2026-09-23
+讯飞星火X2.5,科大讯飞,2026-09-07,待补充,待补充,256K,1.6,6.0,0.24,讯飞星辰MaaS,全国产算力训练；支持200+语言,https://static.xfyun.cn/doc/spark/TokenPlan.html ; http://news.qq.com/rain/a/20260908A0CQ3O00,2026-09-23
+MiniMax-M3,稀宇科技 MiniMax,2026-06-01,开源,MiniMax Model License,1M (计费按512k分档),3.15,12.6,0.63,MiniMax官方,约428B总参/约23B激活 256专家MoE；原生多模态；可操作桌面,https://platform.minimaxi.com/docs/guides/pricing-paygo ; https://www.superclueai.com/generalpage,2026-09-23

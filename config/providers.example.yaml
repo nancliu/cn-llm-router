@@ -1,0 +1,76 @@
+# cn-llm-router provider 配置样例（仓库零密钥：key 一律从环境变量读取）
+# 复制为 config/providers.yaml 后按需修改；密钥见 .env.example
+# 可用逻辑模型名以 data/models.csv 为准；api_model 为上游 API 实际模型名（各平台别名见平台文档）
+providers:
+  GLM-5.3-Flash:
+    provider: zhipu
+    base_url: https://open.bigmodel.cn/api/paas/v4
+    api_model: glm-5.3-flash
+    key_env: ZHIPU_API_KEY
+    timeout: 60
+  GLM-5.3:
+    provider: zhipu
+    base_url: https://open.bigmodel.cn/api/paas/v4
+    api_model: glm-5.3
+    key_env: ZHIPU_API_KEY
+    timeout: 60
+  GLM-5.2:
+    provider: zhipu
+    base_url: https://open.bigmodel.cn/api/paas/v4
+    api_model: glm-5.2
+    key_env: ZHIPU_API_KEY
+    timeout: 60
+  DeepSeek-V4-Pro-0813:
+    provider: deepseek
+    base_url: https://api.deepseek.com
+    api_model: deepseek-v4-pro
+    key_env: DEEPSEEK_API_KEY
+    timeout: 60
+  DeepSeek-V4-Flash-0731:
+    provider: deepseek
+    base_url: https://api.deepseek.com
+    api_model: deepseek-v4-flash
+    key_env: DEEPSEEK_API_KEY
+    timeout: 60
+  DeepSeek-V4.1-Flash-CED:
+    provider: volcengine
+    base_url: https://ark.cn-beijing.volces.com/api/v3
+    api_model: deepseek-v4.1-flash-ced
+    key_env: VOLCENGINE_API_KEY
+    timeout: 60
+  Qwen3.8-Max-0902:
+    provider: aliyun
+    base_url: https://dashscope.aliyuncs.com/compatible-mode/v1
+    api_model: qwen3.8-max-0902
+    key_env: DASHSCOPE_API_KEY
+    timeout: 60
+  Kimi-K3:
+    provider: moonshot
+    base_url: https://api.moonshot.cn/v1
+    api_model: kimi-k3
+    key_env: MOONSHOT_API_KEY
+    timeout: 60
+  Kimi-K2.7-Code:
+    provider: moonshot
+    base_url: https://api.moonshot.cn/v1
+    api_model: kimi-k2.7-code
+    key_env: MOONSHOT_API_KEY
+    timeout: 60
+  豆包Seed-2.1-Pro:
+    provider: volcengine
+    base_url: https://ark.cn-beijing.volces.com/api/v3
+    api_model: doubao-seed-2-1-pro
+    key_env: VOLCENGINE_API_KEY
+    timeout: 60
+  腾讯混元Hy3:
+    provider: tencent
+    base_url: https://api.hunyuan.cloud.tencent.com/v1
+    api_model: hunyuan-hy3
+    key_env: TENCENT_HUNYUAN_API_KEY
+    timeout: 60
+  MiniMax-M3:
+    provider: minimax
+    base_url: https://api.minimax.chat/v1
+    api_model: minimax-m3
+    key_env: MINIMAX_API_KEY
+    timeout: 60

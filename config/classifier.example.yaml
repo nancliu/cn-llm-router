@@ -1,0 +1,7 @@
+# 分类器配置样例（docs/spec/router-v1.md §4，ADR-0002）
+# 复制为 config/classifier.yaml 后按需修改；默认内置：GLM-5.3-Flash → DeepSeek-V4-Flash-0731
+classifier:
+  models:
+    - GLM-5.3-Flash
+    - DeepSeek-V4-Flash-0731
+  timeout: 30
