@@ -10,6 +10,13 @@
 # 环境变量覆盖（可选）：{KEY_ENV 去 _API_KEY 后缀}_BASE_URL（如 ZHIPU_BASE_URL）存在且非空时，
 # 覆盖该 provider 的 base_url——用于自建网关/中转端点；未配置时用 yaml 的 base_url。
 # 注意：api_model 差异（套餐端点模型 ID 与官方名可能不同）请直接在 yaml 中修改。
+#
+# 产品端点速查（同厂商多产品：每个模型条目独立配 base_url 即可，无需改代码）：
+#   火山方舟官方   https://ark.cn-beijing.volces.com/api/v3                            （example 预置）
+#   火山 coding   https://ark.cn-beijing.volces.com/api/coding/v3                       （已实测）
+#   火山 token    URL 以火山方舟控制台/文档为准，各账号可能不同（未预置，不编造）
+#   阿里云百炼官方 https://dashscope.aliyuncs.com/compatible-mode/v1                     （example 预置）
+#   百炼 token    https://token-plan.cn-beijing.maas.aliyuncs.com/compatible-mode/v1    （已实测）
 providers:
   GLM-5.3-Flash:
     provider: zhipu
