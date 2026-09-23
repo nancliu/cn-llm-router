@@ -1,0 +1,762 @@
+{
+ "model": "doubao-mainagent（盲测）",
+ "as_of": "2026-09-23",
+ "judgments": [
+  {
+   "id": "tr-high-3",
+   "category": "翻译润色",
+   "complexity": "高",
+   "confidence": 0.95,
+   "second_guess": null
+  },
+  {
+   "id": "ld-high-2",
+   "category": "长文档处理",
+   "complexity": "高",
+   "confidence": 0.95,
+   "second_guess": null
+  },
+  {
+   "id": "ld-mid-3",
+   "category": "长文档处理",
+   "complexity": "中",
+   "confidence": 0.93,
+   "second_guess": null
+  },
+  {
+   "id": "prog-high",
+   "category": "程序编码",
+   "complexity": "高",
+   "confidence": 0.94,
+   "second_guess": null
+  },
+  {
+   "id": "agent-mid-2",
+   "category": "Agent编排",
+   "complexity": "中",
+   "confidence": 0.88,
+   "second_guess": "数据分析"
+  },
+  {
+   "id": "ld-high-3",
+   "category": "长文档处理",
+   "complexity": "高",
+   "confidence": 0.93,
+   "second_guess": null
+  },
+  {
+   "id": "prog-low-2",
+   "category": "程序编码",
+   "complexity": "低",
+   "confidence": 0.99,
+   "second_guess": null
+  },
+  {
+   "id": "da-high-3",
+   "category": "数据分析",
+   "complexity": "高",
+   "confidence": 0.95,
+   "second_guess": null
+  },
+  {
+   "id": "tr-low",
+   "category": "翻译润色",
+   "complexity": "低",
+   "confidence": 0.99,
+   "second_guess": null
+  },
+  {
+   "id": "qa-mid-2",
+   "category": "知识问答/检索",
+   "complexity": "中",
+   "confidence": 0.97,
+   "second_guess": null
+  },
+  {
+   "id": "cr-low",
+   "category": "创意生成",
+   "complexity": "低",
+   "confidence": 0.99,
+   "second_guess": null
+  },
+  {
+   "id": "agent-high",
+   "category": "Agent编排",
+   "complexity": "高",
+   "confidence": 0.96,
+   "second_guess": null
+  },
+  {
+   "id": "tr-mid",
+   "category": "翻译润色",
+   "complexity": "中",
+   "confidence": 0.98,
+   "second_guess": null
+  },
+  {
+   "id": "da-high-2",
+   "category": "数据分析",
+   "complexity": "高",
+   "confidence": 0.92,
+   "second_guess": "数学推理"
+  },
+  {
+   "id": "math-high",
+   "category": "数学推理",
+   "complexity": "高",
+   "confidence": 0.96,
+   "second_guess": null
+  },
+  {
+   "id": "agent-mid-3",
+   "category": "Agent编排",
+   "complexity": "中",
+   "confidence": 0.97,
+   "second_guess": null
+  },
+  {
+   "id": "doc-high",
+   "category": "文书撰写",
+   "complexity": "高",
+   "confidence": 0.95,
+   "second_guess": null
+  },
+  {
+   "id": "prog-mid",
+   "category": "程序编码",
+   "complexity": "中",
+   "confidence": 0.96,
+   "second_guess": null
+  },
+  {
+   "id": "fe-high-2",
+   "category": "前端UX设计",
+   "complexity": "高",
+   "confidence": 0.95,
+   "second_guess": null
+  },
+  {
+   "id": "tr-low-2",
+   "category": "翻译润色",
+   "complexity": "低",
+   "confidence": 0.99,
+   "second_guess": null
+  },
+  {
+   "id": "crv-low-2",
+   "category": "代码审查与调试",
+   "complexity": "低",
+   "confidence": 0.99,
+   "second_guess": null
+  },
+  {
+   "id": "qa-high",
+   "category": "知识问答/检索",
+   "complexity": "高",
+   "confidence": 0.88,
+   "second_guess": "长文档处理"
+  },
+  {
+   "id": "doc-low",
+   "category": "文书撰写",
+   "complexity": "低",
+   "confidence": 0.98,
+   "second_guess": null
+  },
+  {
+   "id": "tr-high",
+   "category": "翻译润色",
+   "complexity": "高",
+   "confidence": 0.97,
+   "second_guess": null
+  },
+  {
+   "id": "agent-high-2",
+   "category": "Agent编排",
+   "complexity": "高",
+   "confidence": 0.96,
+   "second_guess": null
+  },
+  {
+   "id": "qa-low",
+   "category": "知识问答/检索",
+   "complexity": "低",
+   "confidence": 0.99,
+   "second_guess": null
+  },
+  {
+   "id": "da-low-3",
+   "category": "数据分析",
+   "complexity": "低",
+   "confidence": 0.99,
+   "second_guess": null
+  },
+  {
+   "id": "qa-low-2",
+   "category": "知识问答/检索",
+   "complexity": "低",
+   "confidence": 0.99,
+   "second_guess": null
+  },
+  {
+   "id": "ld-low",
+   "category": "长文档处理",
+   "complexity": "低",
+   "confidence": 0.8,
+   "second_guess": "文书撰写"
+  },
+  {
+   "id": "tr-low-3",
+   "category": "翻译润色",
+   "complexity": "低",
+   "confidence": 0.98,
+   "second_guess": null
+  },
+  {
+   "id": "doc-mid-2",
+   "category": "文书撰写",
+   "complexity": "中",
+   "confidence": 0.97,
+   "second_guess": null
+  },
+  {
+   "id": "ld-high",
+   "category": "长文档处理",
+   "complexity": "高",
+   "confidence": 0.96,
+   "second_guess": null
+  },
+  {
+   "id": "fe-mid-3",
+   "category": "前端UX设计",
+   "complexity": "中",
+   "confidence": 0.92,
+   "second_guess": null
+  },
+  {
+   "id": "ld-low-3",
+   "category": "长文档处理",
+   "complexity": "低",
+   "confidence": 0.9,
+   "second_guess": "文书撰写"
+  },
+  {
+   "id": "doc-high-2",
+   "category": "文书撰写",
+   "complexity": "高",
+   "confidence": 0.93,
+   "second_guess": "创意生成"
+  },
+  {
+   "id": "crv-low-3",
+   "category": "代码审查与调试",
+   "complexity": "低",
+   "confidence": 0.96,
+   "second_guess": null
+  },
+  {
+   "id": "doc-mid-3",
+   "category": "文书撰写",
+   "complexity": "中",
+   "confidence": 0.98,
+   "second_guess": null
+  },
+  {
+   "id": "crv-high-3",
+   "category": "代码审查与调试",
+   "complexity": "高",
+   "confidence": 0.97,
+   "second_guess": null
+  },
+  {
+   "id": "fe-high",
+   "category": "前端UX设计",
+   "complexity": "高",
+   "confidence": 0.95,
+   "second_guess": null
+  },
+  {
+   "id": "mm-high-2",
+   "category": "多模态理解",
+   "complexity": "高",
+   "confidence": 0.94,
+   "second_guess": "知识问答/检索"
+  },
+  {
+   "id": "mm-mid",
+   "category": "多模态理解",
+   "complexity": "中",
+   "confidence": 0.97,
+   "second_guess": null
+  },
+  {
+   "id": "da-mid-2",
+   "category": "数据分析",
+   "complexity": "中",
+   "confidence": 0.97,
+   "second_guess": null
+  },
+  {
+   "id": "tr-mid-3",
+   "category": "翻译润色",
+   "complexity": "中",
+   "confidence": 0.97,
+   "second_guess": null
+  },
+  {
+   "id": "math-low-3",
+   "category": "数学推理",
+   "complexity": "低",
+   "confidence": 0.99,
+   "second_guess": null
+  },
+  {
+   "id": "math-low-2",
+   "category": "数学推理",
+   "complexity": "低",
+   "confidence": 0.98,
+   "second_guess": null
+  },
+  {
+   "id": "agent-mid",
+   "category": "Agent编排",
+   "complexity": "中",
+   "confidence": 0.97,
+   "second_guess": null
+  },
+  {
+   "id": "crv-mid-3",
+   "category": "代码审查与调试",
+   "complexity": "中",
+   "confidence": 0.97,
+   "second_guess": null
+  },
+  {
+   "id": "prog-mid-3",
+   "category": "程序编码",
+   "complexity": "中",
+   "confidence": 0.96,
+   "second_guess": null
+  },
+  {
+   "id": "agent-low",
+   "category": "Agent编排",
+   "complexity": "低",
+   "confidence": 0.92,
+   "second_guess": "数据分析"
+  },
+  {
+   "id": "math-low",
+   "category": "数学推理",
+   "complexity": "低",
+   "confidence": 0.98,
+   "second_guess": null
+  },
+  {
+   "id": "qa-high-2",
+   "category": "知识问答/检索",
+   "complexity": "高",
+   "confidence": 0.96,
+   "second_guess": null
+  },
+  {
+   "id": "cr-low-2",
+   "category": "创意生成",
+   "complexity": "低",
+   "confidence": 0.99,
+   "second_guess": null
+  },
+  {
+   "id": "crv-high",
+   "category": "代码审查与调试",
+   "complexity": "高",
+   "confidence": 0.95,
+   "second_guess": null
+  },
+  {
+   "id": "da-mid-3",
+   "category": "数据分析",
+   "complexity": "中",
+   "confidence": 0.97,
+   "second_guess": null
+  },
+  {
+   "id": "da-low-2",
+   "category": "数据分析",
+   "complexity": "低",
+   "confidence": 0.99,
+   "second_guess": null
+  },
+  {
+   "id": "cr-high",
+   "category": "创意生成",
+   "complexity": "高",
+   "confidence": 0.85,
+   "second_guess": "文书撰写"
+  },
+  {
+   "id": "prog-high-3",
+   "category": "程序编码",
+   "complexity": "高",
+   "confidence": 0.95,
+   "second_guess": null
+  },
+  {
+   "id": "mm-high-3",
+   "category": "多模态理解",
+   "complexity": "高",
+   "confidence": 0.92,
+   "second_guess": "数据分析"
+  },
+  {
+   "id": "prog-high-2",
+   "category": "程序编码",
+   "complexity": "高",
+   "confidence": 0.95,
+   "second_guess": null
+  },
+  {
+   "id": "da-high",
+   "category": "数据分析",
+   "complexity": "高",
+   "confidence": 0.95,
+   "second_guess": null
+  },
+  {
+   "id": "qa-mid-3",
+   "category": "知识问答/检索",
+   "complexity": "中",
+   "confidence": 0.99,
+   "second_guess": null
+  },
+  {
+   "id": "doc-low-2",
+   "category": "文书撰写",
+   "complexity": "低",
+   "confidence": 0.99,
+   "second_guess": null
+  },
+  {
+   "id": "da-low",
+   "category": "数据分析",
+   "complexity": "低",
+   "confidence": 0.99,
+   "second_guess": null
+  },
+  {
+   "id": "crv-mid",
+   "category": "代码审查与调试",
+   "complexity": "中",
+   "confidence": 0.96,
+   "second_guess": null
+  },
+  {
+   "id": "mm-mid-2",
+   "category": "多模态理解",
+   "complexity": "中",
+   "confidence": 0.97,
+   "second_guess": null
+  },
+  {
+   "id": "tr-mid-2",
+   "category": "翻译润色",
+   "complexity": "中",
+   "confidence": 0.98,
+   "second_guess": null
+  },
+  {
+   "id": "math-high-3",
+   "category": "数学推理",
+   "complexity": "高",
+   "confidence": 0.97,
+   "second_guess": null
+  },
+  {
+   "id": "math-high-2",
+   "category": "数学推理",
+   "complexity": "高",
+   "confidence": 0.96,
+   "second_guess": null
+  },
+  {
+   "id": "prog-mid-2",
+   "category": "程序编码",
+   "complexity": "中",
+   "confidence": 0.96,
+   "second_guess": null
+  },
+  {
+   "id": "math-mid",
+   "category": "数学推理",
+   "complexity": "中",
+   "confidence": 0.96,
+   "second_guess": null
+  },
+  {
+   "id": "crv-low",
+   "category": "代码审查与调试",
+   "complexity": "低",
+   "confidence": 0.98,
+   "second_guess": null
+  },
+  {
+   "id": "ld-mid",
+   "category": "长文档处理",
+   "complexity": "中",
+   "confidence": 0.85,
+   "second_guess": "文书撰写"
+  },
+  {
+   "id": "cr-high-3",
+   "category": "创意生成",
+   "complexity": "高",
+   "confidence": 0.96,
+   "second_guess": null
+  },
+  {
+   "id": "ld-low-2",
+   "category": "长文档处理",
+   "complexity": "低",
+   "confidence": 0.97,
+   "second_guess": null
+  },
+  {
+   "id": "mm-low-3",
+   "category": "多模态理解",
+   "complexity": "低",
+   "confidence": 0.99,
+   "second_guess": null
+  },
+  {
+   "id": "agent-low-3",
+   "category": "Agent编排",
+   "complexity": "低",
+   "confidence": 0.97,
+   "second_guess": null
+  },
+  {
+   "id": "doc-low-3",
+   "category": "文书撰写",
+   "complexity": "低",
+   "confidence": 0.99,
+   "second_guess": null
+  },
+  {
+   "id": "cr-low-3",
+   "category": "创意生成",
+   "complexity": "低",
+   "confidence": 0.99,
+   "second_guess": null
+  },
+  {
+   "id": "mm-low",
+   "category": "多模态理解",
+   "complexity": "低",
+   "confidence": 0.99,
+   "second_guess": null
+  },
+  {
+   "id": "prog-low",
+   "category": "程序编码",
+   "complexity": "低",
+   "confidence": 0.99,
+   "second_guess": null
+  },
+  {
+   "id": "fe-low-3",
+   "category": "前端UX设计",
+   "complexity": "低",
+   "confidence": 0.99,
+   "second_guess": null
+  },
+  {
+   "id": "crv-mid-2",
+   "category": "代码审查与调试",
+   "complexity": "中",
+   "confidence": 0.98,
+   "second_guess": null
+  },
+  {
+   "id": "agent-high-3",
+   "category": "Agent编排",
+   "complexity": "高",
+   "confidence": 0.93,
+   "second_guess": null
+  },
+  {
+   "id": "cr-mid-2",
+   "category": "创意生成",
+   "complexity": "中",
+   "confidence": 0.97,
+   "second_guess": null
+  },
+  {
+   "id": "qa-mid",
+   "category": "知识问答/检索",
+   "complexity": "中",
+   "confidence": 0.98,
+   "second_guess": null
+  },
+  {
+   "id": "fe-low-2",
+   "category": "前端UX设计",
+   "complexity": "低",
+   "confidence": 0.99,
+   "second_guess": null
+  },
+  {
+   "id": "qa-low-3",
+   "category": "知识问答/检索",
+   "complexity": "低",
+   "confidence": 0.99,
+   "second_guess": null
+  },
+  {
+   "id": "da-mid",
+   "category": "数据分析",
+   "complexity": "中",
+   "confidence": 0.96,
+   "second_guess": null
+  },
+  {
+   "id": "mm-mid-3",
+   "category": "多模态理解",
+   "complexity": "中",
+   "confidence": 0.98,
+   "second_guess": null
+  },
+  {
+   "id": "mm-low-2",
+   "category": "多模态理解",
+   "complexity": "低",
+   "confidence": 0.99,
+   "second_guess": null
+  },
+  {
+   "id": "math-mid-2",
+   "category": "数学推理",
+   "complexity": "中",
+   "confidence": 0.97,
+   "second_guess": null
+  },
+  {
+   "id": "doc-mid",
+   "category": "文书撰写",
+   "complexity": "中",
+   "confidence": 0.96,
+   "second_guess": null
+  },
+  {
+   "id": "ld-mid-2",
+   "category": "长文档处理",
+   "complexity": "中",
+   "confidence": 0.88,
+   "second_guess": "文书撰写"
+  },
+  {
+   "id": "qa-high-3",
+   "category": "知识问答/检索",
+   "complexity": "高",
+   "confidence": 0.95,
+   "second_guess": null
+  },
+  {
+   "id": "cr-mid-3",
+   "category": "创意生成",
+   "complexity": "中",
+   "confidence": 0.97,
+   "second_guess": null
+  },
+  {
+   "id": "agent-low-2",
+   "category": "Agent编排",
+   "complexity": "低",
+   "confidence": 0.96,
+   "second_guess": null
+  },
+  {
+   "id": "fe-mid",
+   "category": "前端UX设计",
+   "complexity": "中",
+   "confidence": 0.95,
+   "second_guess": null
+  },
+  {
+   "id": "tr-high-2",
+   "category": "翻译润色",
+   "complexity": "高",
+   "confidence": 0.93,
+   "second_guess": "长文档处理"
+  },
+  {
+   "id": "fe-low",
+   "category": "前端UX设计",
+   "complexity": "低",
+   "confidence": 0.98,
+   "second_guess": null
+  },
+  {
+   "id": "mm-high",
+   "category": "多模态理解",
+   "complexity": "高",
+   "confidence": 0.9,
+   "second_guess": "数据分析"
+  },
+  {
+   "id": "math-mid-3",
+   "category": "数学推理",
+   "complexity": "中",
+   "confidence": 0.96,
+   "second_guess": null
+  },
+  {
+   "id": "doc-high-3",
+   "category": "文书撰写",
+   "complexity": "高",
+   "confidence": 0.95,
+   "second_guess": null
+  },
+  {
+   "id": "crv-high-2",
+   "category": "代码审查与调试",
+   "complexity": "高",
+   "confidence": 0.95,
+   "second_guess": "程序编码"
+  },
+  {
+   "id": "cr-high-2",
+   "category": "创意生成",
+   "complexity": "高",
+   "confidence": 0.88,
+   "second_guess": "文书撰写"
+  },
+  {
+   "id": "fe-high-3",
+   "category": "前端UX设计",
+   "complexity": "高",
+   "confidence": 0.95,
+   "second_guess": null
+  },
+  {
+   "id": "prog-low-3",
+   "category": "程序编码",
+   "complexity": "低",
+   "confidence": 0.99,
+   "second_guess": null
+  },
+  {
+   "id": "cr-mid",
+   "category": "创意生成",
+   "complexity": "中",
+   "confidence": 0.97,
+   "second_guess": null
+  },
+  {
+   "id": "fe-mid-2",
+   "category": "前端UX设计",
+   "complexity": "中",
+   "confidence": 0.95,
+   "second_guess": null
+  }
+ ]
+}
