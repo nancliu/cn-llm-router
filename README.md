@@ -5,8 +5,8 @@
 ## 状态
 
 - ✅ 打分表 v1-20260923（12 任务类别 × 3 复杂度 × 15 模型，含三档性价比策略：纯能力优先 / 平衡 / 性价比优先）
-- ✅ 路由层 v1（任务分类器 + 模型选择器 + OpenAI 兼容薄网关），47 个离线测试通过（Python 3.10/3.11/3.12，GitHub Actions CI）
-- ⏳ backlog：飞书同步脚本、分类准确率在线评测、CLI 工具、PyPI 发布、LiteLLM provider
+- ✅ 路由层 v1（任务分类器 + 模型选择器 + OpenAI 兼容薄网关），67 个测试通过（Python 3.10/3.11/3.12，GitHub Actions CI）
+- ✅ 工具链：飞书打分表同步、分类在线评测（108 golden cases）、CLI、PyPI 打包（wheel 已验证）、LiteLLM backend
 
 ## 快速使用
 
@@ -34,6 +34,34 @@ PY
 ```
 
 三档策略：`纯能力优先` / `平衡`（默认）/ `性价比优先`；默认按已配置 key 过滤推荐（`config/selector.yaml` 中 `availability_filter: false` 关闭，从全量集比较）。
+
+## CLI
+
+```bash
+pip install -e ".[dev]"   # 注册 cn-llm-router 命令；或 python -m cn_llm_router
+cn-llm-router classify "帮我写一个Python函数解析JSON"        # 任务分类
+cn-llm-router select --category 程序编码 --complexity 低 --no-availability-filter   # 模型推荐
+cn-llm-router route "用SQL统计每日订单量" --no-availability-filter                 # 分类+推荐+就绪客户端
+cn-llm-router list-models / list-categories / list-strategies                      # 数据与策略查看
+# 全部命令支持 --json（stdout 仅一份 JSON，可管道/脚本化）
+```
+
+## 工具链（scripts/）
+
+| 脚本 | 用途 |
+|---|---|
+| `scripts/sync_from_lark.py --url <打分表URL>` | 飞书打分表 → `data/*.csv` 同步（幂等：内容一致不重写；需 `lark-cli`；URL 也可放环境变量 `CN_LLM_ROUTER_SHEET_URL`） |
+| `scripts/eval_classifier.py [--models A,B] [--dry-run]` | LLM 判类在线评测：108 golden cases（12 类 × 3 复杂度 × 3 题），输出端到端/LLM 直判准确率、按类别矩阵、混淆矩阵，推荐默认分类模型。需至少一个分类模型的 API key |
+| `scripts/export_data.py <快照.json>` | 一次性导出（sync 脚本内部复用） |
+
+## 网关 backend
+
+`config/providers.yaml` 中每个 provider 可选 `backend`（默认 `openai`）：
+
+- `openai`：OpenAI 兼容端点直连（base_url + api_key）
+- `litellm`：经 LiteLLM 直连（`provider/api_model` 组合路由、API 统一），需 `pip install "cn-llm-router[litellm]"`
+
+失败自动切备选（仅网络/5xx/429 类错误；401 等鉴权错误直抛），可用 `config/selector.yaml` 的 `max_failover` 调整或关闭。
 
 ## 文档
 

@@ -19,6 +19,11 @@ _RETRYABLE = ("APIConnectionError", "APITimeoutError", "InternalServerError", "R
 
 
 def _client_kwargs(prov: ProviderSpec) -> dict:
+    _require_key(prov)
+    return {"base_url": prov.base_url, "api_key": os.environ.get(prov.key_env, ""), "timeout": prov.timeout}
+
+
+def _require_key(prov: ProviderSpec) -> str:
     key = os.environ.get(prov.key_env, "")
     if not key:
         raise RouteError(
@@ -26,14 +31,64 @@ def _client_kwargs(prov: ProviderSpec) -> dict:
             cause="missing_key",
             attempted=[prov.logical_name],
         )
-    return {"base_url": prov.base_url, "api_key": key, "timeout": prov.timeout}
+    return key
 
 
 def build_client(prov: ProviderSpec):
-    """构建指向该 provider 的 OpenAI 兼容客户端。"""
+    """构建指向该 provider 的客户端：backend=openai（默认）| litellm（ADR-0003 预留接口落地）。"""
+    if getattr(prov, "backend", "openai") == "litellm":
+        _require_key(prov)
+        try:
+            import litellm  # noqa: F401 —— 懒加载校验依赖
+        except ImportError:
+            raise RouteError(
+                f"模型 {prov.logical_name} 使用 backend=litellm，但未安装 litellm：pip install 'cn-llm-router[litellm]'",
+                cause="litellm_missing",
+                attempted=[prov.logical_name],
+            ) from None
+        return LiteLLMClient(prov)
+
     from openai import OpenAI
 
     return OpenAI(**_client_kwargs(prov))
+
+
+class _LiteLLMCompletions:
+    """OpenAI 兼容 completions：经 litellm.completion 直连上游（provider/api_model 组合路由）。"""
+
+    def __init__(self, prov: ProviderSpec):
+        self.prov = prov
+
+    def create(self, *args, **kwargs):
+        import litellm
+
+        kwargs = dict(kwargs)
+        api_model = kwargs.pop("model", self.prov.api_model)
+        model = f"{self.prov.provider}/{api_model}" if self.prov.provider else api_model
+        params = {"model": model}
+        key = os.environ.get(self.prov.key_env, "") or None
+        if key:
+            params["api_key"] = key
+        if self.prov.base_url:
+            params["api_base"] = self.prov.base_url
+        if self.prov.timeout:
+            params.setdefault("timeout", self.prov.timeout)
+        params.update(kwargs)
+        return litellm.completion(**params)
+
+
+class _LiteLLMChat:
+    def __init__(self, prov: ProviderSpec):
+        self.prov = prov
+        self.completions = _LiteLLMCompletions(prov)
+
+
+class LiteLLMClient:
+    """backend=litellm 的客户端外壳（.chat.completions.create 与 OpenAI 兼容）。"""
+
+    def __init__(self, prov: ProviderSpec):
+        self.prov = prov
+        self.chat = _LiteLLMChat(prov)
 
 
 class _CompletionsProxy:

@@ -9,16 +9,42 @@ description = "国内大模型选择器/路由器：自然语言任务分类 × 
 readme = "README.md"
 requires-python = ">=3.10"
 license = { text = "MIT" }
+keywords = ["llm", "router", "model-router", "国产大模型", "模型路由", "benchmark", "superclue", "deepseek", "qwen", "glm", "kimi", "doubao"]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Developers",
+    "Topic :: Scientific/Engineering :: Artificial Intelligence",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Operating System :: OS Independent",
+]
 dependencies = [
     "openai>=1.40",
     "pyyaml>=6.0",
 ]
 
 [project.optional-dependencies]
-dev = ["pytest>=8"]
+dev = ["pytest>=8", "build>=1.0"]
+# 使用 LiteLLM backend 时安装（见 config/providers.example.yaml 的 backend: litellm）
+litellm = ["litellm>=1.40"]
+
+[project.urls]
+Homepage = "https://github.com/nancliu/cn-llm-router"
+Repository = "https://github.com/nancliu/cn-llm-router"
+Documentation = "https://github.com/nancliu/cn-llm-router#readme"
+Issues = "https://github.com/nancliu/cn-llm-router/issues"
+
+[project.scripts]
+cn-llm-router = "cn_llm_router.cli:main"
 
 [tool.setuptools.packages.find]
-include = ["cn_llm_router*"]
+include = ["cn_llm_router*", "data*"]
+
+[tool.setuptools.package-data]
+data = ["*.csv", "*.yaml", "VERSION"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

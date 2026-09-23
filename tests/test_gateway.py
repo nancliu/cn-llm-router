@@ -119,3 +119,105 @@ def test_missing_key_env_raises(monkeypatch):
     with pytest.raises(RouteError) as ei:
         client.chat.completions.create(messages=[])
     assert "API key 未配置" in ei.value.message
+
+
+# ---- backend=litellm（ADR-0003 预留接口落地） ----
+
+def _litellm_prov():
+    from cn_llm_router.config import ProviderSpec
+
+    return ProviderSpec("GLM-5.3-Flash", "zhipu", "https://open.bigmodel.cn/api/paas/v4",
+                        "glm-5.3-flash", "ZHIPU_API_KEY", backend="litellm")
+
+
+def test_litellm_backend_routes_to_litellm(monkeypatch):
+    import sys
+    import types
+
+    import cn_llm_router.gateway as g
+
+    calls = {}
+    fake_litellm = types.ModuleType("litellm")
+
+    def fake_completion(**kwargs):
+        calls.update(kwargs)
+        return {"model": kwargs["model"], "choices": [{"message": {"content": "ok"}}]}
+
+    fake_litellm.completion = fake_completion
+    monkeypatch.setitem(sys.modules, "litellm", fake_litellm)
+    monkeypatch.setenv("ZHIPU_API_KEY", "test-key")
+
+    client = g.build_client(_litellm_prov())
+    out = client.chat.completions.create(messages=[{"role": "user", "content": "hi"}])
+    assert out["model"] == "zhipu/glm-5.3-flash"
+    assert calls["api_key"] == "test-key"
+    assert calls["api_base"] == "https://open.bigmodel.cn/api/paas/v4"
+    assert calls["messages"] == [{"role": "user", "content": "hi"}]
+
+
+def test_litellm_backend_provider_prefix_optional(monkeypatch):
+    import sys
+    import types
+
+    import cn_llm_router.gateway as g
+    from cn_llm_router.config import ProviderSpec
+
+    calls = {}
+    fake_litellm = types.ModuleType("litellm")
+    fake_litellm.completion = lambda **kw: calls.update(kw) or {"model": kw["model"]}
+    monkeypatch.setitem(sys.modules, "litellm", fake_litellm)
+    monkeypatch.setenv("K1", "k")
+    prov = ProviderSpec("A", "", "", "qwen", "K1", backend="litellm")  # 无 provider 前缀
+    client = g.build_client(prov)
+    assert client.chat.completions.create(messages=[])["model"] == "qwen"
+
+
+def test_litellm_missing_dep_raises(monkeypatch):
+    import builtins
+
+    import cn_llm_router.gateway as g
+
+    monkeypatch.setenv("ZHIPU_API_KEY", "test-key")
+    orig_import = builtins.__import__
+
+    def fake_import(name, *a, **kw):
+        if name == "litellm":
+            raise ImportError("No module named 'litellm'")
+        return orig_import(name, *a, **kw)
+
+    monkeypatch.setattr(builtins, "__import__", fake_import)
+    with pytest.raises(RouteError) as ei:
+        g.build_client(_litellm_prov())
+    assert "litellm" in ei.value.cause
+
+
+def test_litellm_failover_via_router(monkeypatch):
+    """RouterClient 全链路：主选 litellm 失败 → 切备选 openai。"""
+    import sys
+    import types
+
+    import cn_llm_router.gateway as g
+
+    fake_litellm = types.ModuleType("litellm")
+    fake_litellm.completion = lambda **kw: (_ for _ in ()).throw(_ConnErr("Connection reset"))
+    monkeypatch.setitem(sys.modules, "litellm", fake_litellm)
+    monkeypatch.setenv("K1", "k1")
+    monkeypatch.setenv("K2", "k2")
+
+    def fake_build(prov):
+        if getattr(prov, "backend", "openai") == "litellm":
+            return g.LiteLLMClient(prov)
+        return _FakeClient(prov.logical_name, fail=None)
+
+    monkeypatch.setattr(g, "build_client", fake_build)
+    rec = _rec(primary_name="A", backup_name="B")
+    cfg = RouterConfig(
+        providers={
+            "A": g.ProviderSpec("A", "p1", "http://a", "a", "K1", backend="litellm"),
+            "B": g.ProviderSpec("B", "p2", "http://b", "b", "K2"),
+        }
+    )
+    client = RouterClient(rec, cfg)
+    out = client.chat.completions.create(messages=[])
+    assert out["model"] == "B"
+    assert client.attempted == ["A", "B"]

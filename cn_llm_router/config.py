@@ -13,15 +13,35 @@ from typing import Optional
 import yaml
 
 PACKAGE_ROOT = Path(__file__).resolve().parent.parent
-DEFAULT_DATA_DIR = PACKAGE_ROOT / "data"
 DEFAULT_CONFIG_DIR = PACKAGE_ROOT / "config"
 ENV_CONFIG_DIR = "CN_LLM_ROUTER_CONFIG"
 ENV_PREFIX = "CN_LLM_ROUTER_"
 
 
+def default_data_dir() -> Path:
+    """默认数据目录解析（ADR-0004 唯一真相源 data/*.csv）。
+
+    顺序：仓库根 data/（开发/源码模式）→ 随 wheel 安装的 data 包（site-packages/data）。
+    """
+    repo_data = PACKAGE_ROOT / "data"
+    if (repo_data / "VERSION").exists():
+        return repo_data
+    try:
+        import data as _data_pkg  # noqa: PLC0415 —— wheel 分发为顶层包
+        return Path(_data_pkg.__file__).resolve().parent
+    except ImportError:
+        return repo_data
+
+
+DEFAULT_DATA_DIR = default_data_dir()
+
+
 @dataclass
 class ProviderSpec:
-    """逻辑模型名 → 上游厂商接入信息（ADR-0003）。"""
+    """逻辑模型名 → 上游厂商接入信息（ADR-0003）。
+
+    backend: "openai"（默认，OpenAI 兼容端点）| "litellm"（经 LiteLLM 直连，需 cn-llm-router[litellm]）。
+    """
 
     logical_name: str
     provider: str
@@ -29,6 +49,7 @@ class ProviderSpec:
     api_model: str
     key_env: str
     timeout: float = 60.0
+    backend: str = "openai"
 
 
 @dataclass
@@ -82,6 +103,7 @@ def load_config(config_dir: Optional[str] = None) -> RouterConfig:
             api_model=str(spec.get("api_model", logical)),
             key_env=str(spec.get("key_env", f"{ENV_PREFIX}{logical.upper().replace('-', '_')}_KEY")),
             timeout=float(spec.get("timeout", 60.0)),
+            backend=str(spec.get("backend", "openai")),
         )
     cfg.providers = providers
 

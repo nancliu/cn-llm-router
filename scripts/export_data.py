@@ -4,7 +4,8 @@
 用法: python3 scripts/export_data.py /path/to/sheet_export.json [data目录]
 - 输入: `lark-cli sheets +table-get --url <打分表URL> --output-path <json>` 的产物
 - 输出: data/models.csv / data/scores.csv / data/weights.csv / data/categories.yaml / data/VERSION
-本脚本是 v1 的一次性导出工具（ADR-0004：data/*.csv 为唯一真相源，飞书同步脚本进 backlog）。
+- 可编程复用: parse_sheets(doc) / write_data(data_dir, parsed)（同步脚本 sync_from_lark.py 复用本模块）
+本脚本是 v1 的一次性导出工具 + 同步链路的解析/落盘层（ADR-0004：data/*.csv 为唯一真相源）。
 """
 import csv
 import json
@@ -34,6 +35,8 @@ COMPLEXITY_LEVELS = ["低", "中", "高"]
 
 DIMENSIONS = ["数学推理", "幻觉控制", "科学推理", "精确指令遵循", "Agentic编程", "Agent任务规划", "Terminal编程", "SuperCLUE总分"]
 
+OUTPUT_FILES = ["models.csv", "scores.csv", "weights.csv", "categories.yaml", "VERSION"]
+
 
 def cell_num(v):
     """把单元格值转 float；非数值（待补充/N/A/空/—）返回 None。"""
@@ -59,15 +62,15 @@ def ffill(rows):
     return out
 
 
-def main(json_path, data_dir):
-    os.makedirs(data_dir, exist_ok=True)
-    with open(json_path, encoding="utf-8") as f:
-        doc = json.load(f)
+def parse_sheets(doc: dict) -> dict:
+    """解析 +table-get 快照（{complete, sheets:[{name, columns, data, dtypes, range}]}）为结构化数据。
+
+    返回 {models, scores, weights, categories}；任何结构断言失败直接抛异常（校验即失败）。
+    """
     sheets = {s["name"]: s for s in doc["sheets"]}
 
-    # ---------- models.csv ----------
+    # ---------- models ----------
     reg = sheets["模型注册表"]
-    # data[0] 为真实表头：序号,厂商,型号,发布时间,开源/闭源,开源协议,上下文窗口,输入单价,输出单价,缓存命中价,计费平台,综合成本(公式),架构/参数备注,数据来源URL
     rows = reg["data"]
     header = [str(c).strip() for c in rows[0]]
     assert header[2] == "型号" and "输入单价" in header[7] and "输出单价" in header[8], header
@@ -91,23 +94,18 @@ def main(json_path, data_dir):
             "source_url": str(r[13]).strip(),
             "as_of": AS_OF,
         })
-    with open(os.path.join(data_dir, "models.csv"), "w", encoding="utf-8-sig", newline="") as f:
-        w = csv.DictWriter(f, fieldnames=list(models[0].keys()))
-        w.writeheader()
-        w.writerows(models)
-    print(f"models.csv: {len(models)} 行")
+    assert len(models) >= 10, f"模型数异常: {len(models)}"
 
-    # ---------- scores.csv（长表） ----------
+    # ---------- scores（长表） ----------
     mtx = sheets["能力评分矩阵"]
     mrows = mtx["data"]
-    mcols = [str(c).strip() for c in mrows[0]]  # 真实表头
+    mcols = [str(c).strip() for c in mrows[0]]
     assert mcols[0] == "任务类别" and mcols[1] == "复杂度", mcols
-    model_cols = mcols[2:-1]  # 去掉评分依据列
-    rows = ffill(mrows[1:])  # 数据体（任务类别列为合并单元格，向下填充）
-    # 数据从第 2 行起（第 1 行是表头）
+    model_cols = mcols[2:-1]
+    rows = ffill(mrows[1:])
     scores = []
     seen = set()
-    for r in rows:  # 已剔除表头
+    for r in rows:
         if not r or not str(r[0]).strip():
             continue
         cat = str(r[0]).strip()
@@ -127,17 +125,13 @@ def main(json_path, data_dir):
                 "basis": basis,
                 "as_of": AS_OF,
             })
-    with open(os.path.join(data_dir, "scores.csv"), "w", encoding="utf-8-sig", newline="") as f:
-        w = csv.DictWriter(f, fieldnames=["category", "complexity", "model", "score", "basis", "as_of"])
-        w.writeheader()
-        w.writerows(scores)
-    n_score = sum(1 for s in scores if s["score"] != "")
-    print(f"scores.csv: {len(scores)} 行（其中有效分值 {n_score}）")
+    n_cat_cx = len({(s["category"], s["complexity"]) for s in scores})
+    assert n_cat_cx == 36, f"类别×复杂度格数异常: {n_cat_cx}"
 
-    # ---------- weights.csv（区块A：数据第1~12行） ----------
+    # ---------- weights（区块A：数据第1~12行） ----------
     syn = sheets["综合与性价比"]
     srows = syn["data"]
-    scols = [str(c).strip() for c in srows[0]]  # 真实表头：任务类别 + 8 维度
+    scols = [str(c).strip() for c in srows[0]]
     assert scols[0] == "任务类别", scols
     weights = []
     for r in srows[1:13]:
@@ -149,40 +143,60 @@ def main(json_path, data_dir):
             else:
                 v = cell_num(raw)
                 w, note = (0.0 if v is None else v), ""
-            weights.append({
-                "category": cat,
-                "dimension": dim,
-                "weight": w,
-                "note": note,
-                "as_of": AS_OF,
-            })
+            weights.append({"category": cat, "dimension": dim, "weight": w, "note": note, "as_of": AS_OF})
     n_cats = len({x["category"] for x in weights})
     assert n_cats == 12, f"权重类别数异常: {n_cats}"
     assert len(weights) == 96, f"权重行数异常: {len(weights)}"
+
+    # ---------- categories ----------
+    categories = [
+        {"id": cid, "name": name, "description": desc, "examples": ex}
+        for cid, name, desc, ex in CATEGORY_DEFS
+    ]
+    return {"models": models, "scores": scores, "weights": weights, "categories": categories}
+
+
+def write_data(data_dir: str, parsed: dict) -> None:
+    """把 parse_sheets 结果落盘为 data/*.csv + categories.yaml + VERSION。"""
+    os.makedirs(data_dir, exist_ok=True)
+
+    models = parsed["models"]
+    with open(os.path.join(data_dir, "models.csv"), "w", encoding="utf-8-sig", newline="") as f:
+        w = csv.DictWriter(f, fieldnames=list(models[0].keys()))
+        w.writeheader()
+        w.writerows(models)
+
+    scores = parsed["scores"]
+    with open(os.path.join(data_dir, "scores.csv"), "w", encoding="utf-8-sig", newline="") as f:
+        w = csv.DictWriter(f, fieldnames=["category", "complexity", "model", "score", "basis", "as_of"])
+        w.writeheader()
+        w.writerows(scores)
+
+    weights = parsed["weights"]
     with open(os.path.join(data_dir, "weights.csv"), "w", encoding="utf-8-sig", newline="") as f:
         w = csv.DictWriter(f, fieldnames=["category", "dimension", "weight", "note", "as_of"])
         w.writeheader()
         w.writerows(weights)
-    print(f"weights.csv: {len(weights)} 行（{n_cats} 个类别 × 8 维）")
 
-    # ---------- categories.yaml ----------
     import yaml
-    cat_entries = []
-    for cid, name, desc, ex in CATEGORY_DEFS:
-        cat_entries.append({
-            "id": cid,
-            "name": name,
-            "description": desc,
-            "examples": ex,
-        })
     with open(os.path.join(data_dir, "categories.yaml"), "w", encoding="utf-8") as f:
         f.write(f"# 任务类别唯一事实源（ADR 词汇表：类别定义）\n# as_of: {AS_OF}\n")
-        yaml.safe_dump({"categories": cat_entries}, f, allow_unicode=True, sort_keys=False)
+        yaml.safe_dump({"categories": parsed["categories"]}, f, allow_unicode=True, sort_keys=False)
 
-    # ---------- VERSION ----------
     with open(os.path.join(data_dir, "VERSION"), "w", encoding="utf-8") as f:
         f.write(f"{VERSION}\nas_of: {AS_OF}\nsource: 国内大模型选择器打分表 v1-20260923（飞书）\n")
 
+
+def main(json_path, data_dir):
+    with open(json_path, encoding="utf-8") as f:
+        doc = json.load(f)
+    parsed = parse_sheets(doc)
+    write_data(data_dir, parsed)
+    n_score = sum(1 for s in parsed["scores"] if s["score"] != "")
+    print(f"models.csv: {len(parsed['models'])} 行")
+    print(f"scores.csv: {len(parsed['scores'])} 行（其中有效分值 {n_score}）")
+    print(f"weights.csv: {len(parsed['weights'])} 行（12 类别 × 8 维）")
+    print(f"categories.yaml: {len(parsed['categories'])} 类")
     print("done ->", data_dir)
 
 

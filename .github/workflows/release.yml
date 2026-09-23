@@ -1,0 +1,51 @@
+name: Release
+
+# 推 tag v* 时构建 sdist/wheel 并（可选）发布到 PyPI。
+# PyPI 发布使用 trusted publishing（OpenID Connect）：
+#   1. 在 https://pypi.org/manage/account/publishing/ 为 nancliu 配置 cn-llm-router 的 pending publisher，
+#      环境名写 "release"（workflow 名），工作流文件路径写 ".github/workflows/release.yml"
+#   2. 推送 tag: git tag v0.1.0 && git push origin v0.1.0
+# 未配置前，build 与 artifact 照常执行，publish 步骤会被跳过（不会失败）。
+
+on:
+  push:
+    tags: ["v*"]
+
+permissions:
+  contents: read
+  id-token: write  # 仅 publish 步骤使用（trusted publishing）
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Build sdist + wheel
+        run: |
+          pip install -q build
+          python -m build
+      - name: Smoke check wheel
+        run: |
+          pip install -q dist/*.whl
+          cn-llm-router list-models --json | python -c "import json,sys; assert len(json.load(sys.stdin)) >= 10"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: dist
+          path: dist/
+
+  publish:
+    needs: build
+    runs-on: ubuntu-latest
+    if: startsWith(github.ref, 'refs/tags/v')
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: dist
+          path: dist/
+      - name: Publish to PyPI
+        uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          packages-dir: dist/
