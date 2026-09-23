@@ -5,8 +5,9 @@
 ## 状态
 
 - ✅ 打分表 v1-20260923（12 任务类别 × 3 复杂度 × 15 模型，含三档性价比策略：纯能力优先 / 平衡 / 性价比优先）
-- ✅ 路由层 v1（任务分类器 + 模型选择器 + OpenAI 兼容薄网关），67 个测试通过（Python 3.10/3.11/3.12，GitHub Actions CI）
+- ✅ 路由层 v1（任务分类器 + 模型选择器 + OpenAI 兼容薄网关），73 个测试通过（Python 3.10/3.11/3.12，GitHub Actions CI）
 - ✅ 工具链：飞书打分表同步、分类在线评测（108 golden cases）、CLI、PyPI 打包（wheel 已验证）、LiteLLM backend
+- ✅ 在线评测（2026-09-23，火山 coding-plan / 百炼 token-plan 实测）：DeepSeek-V4.1-Flash-CED 端到端 99.1% 为最优默认分类模型（报告见 `reports/eval-cn-plan-20260923.json`）
 
 ## 快速使用
 

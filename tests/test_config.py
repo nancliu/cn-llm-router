@@ -41,6 +41,7 @@ def test_base_url_env_empty_ignored(monkeypatch, tmp_path):
 
 def test_dotenv_loads_keys(monkeypatch, tmp_path):
     """_load_dotenv：注入键值、去引号、不覆盖已存在的环境变量。"""
+    monkeypatch.delenv("CN_LLM_ROUTER_NO_DOTENV", raising=False)  # 本用例需要加载行为
     for k in ("ZHIPU_API_KEY", "DEEPSEEK_API_KEY", "MOONSHOT_API_KEY", "VOLCENGINE_API_KEY"):
         monkeypatch.delenv(k, raising=False)
     monkeypatch.setenv("ZHIPU_API_KEY", "already-set")
@@ -62,6 +63,7 @@ def test_dotenv_loads_keys(monkeypatch, tmp_path):
 
 def test_dotenv_missing_noop(monkeypatch, tmp_path):
     """_load_dotenv：文件不存在时是空操作。"""
+    monkeypatch.delenv("CN_LLM_ROUTER_NO_DOTENV", raising=False)
     monkeypatch.delenv("ZHIPU_API_KEY", raising=False)
     _load_dotenv(tmp_path / "no-such.env")
     assert "ZHIPU_API_KEY" not in os.environ
