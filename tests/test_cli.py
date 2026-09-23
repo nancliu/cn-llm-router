@@ -1,15 +1,21 @@
 """CLI 测试：python -m cn_llm_router 与注册入口 cn-llm-router 的冒烟覆盖。"""
 import json
+import os
 import subprocess
 import sys
 
 REPO = __import__("pathlib").Path(__file__).resolve().parent.parent
 
 
-def run_cli(*args, cwd=None):
+def run_cli(*args, cwd=None, env=None):
+    # 继承父进程环境，仅加隔离开关（子进程不自动加载本地 .env）
+    full_env = dict(os.environ)
+    full_env["CN_LLM_ROUTER_NO_DOTENV"] = "1"
+    if env:
+        full_env.update(env)
     return subprocess.run(
         [sys.executable, "-m", "cn_llm_router", *args],
-        capture_output=True, text=True, cwd=cwd or REPO,
+        capture_output=True, text=True, cwd=cwd or REPO, env=full_env,
     )
 
 
@@ -33,8 +39,10 @@ def test_select_offline():
     assert "主选" in r.stdout
 
 
-def test_select_no_key_raises_hint():
+def test_select_no_key_raises_hint(monkeypatch):
     # 默认开可用性过滤、无 key → 报错并带 availability_filter 提示
+    monkeypatch.delenv("VOLCENGINE_API_KEY", raising=False)
+    monkeypatch.delenv("DASHSCOPE_API_KEY", raising=False)
     r = run_cli("select", "--category", "程序编码", "--complexity", "低")
     assert r.returncode == 2
     assert "availability_filter" in r.stderr

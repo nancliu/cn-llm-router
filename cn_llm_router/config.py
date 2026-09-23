@@ -35,6 +35,39 @@ def default_data_dir() -> Path:
 
 DEFAULT_DATA_DIR = default_data_dir()
 
+_dotenv_loaded = False
+
+
+def _load_dotenv(path: Optional[Path] = None) -> None:
+    """把仓库根 .env 载入 os.environ（已存在的环境变量优先，不覆盖；无 .env 则空操作）。
+
+    零配置 clone 即用原则的落地：文档要求 cp .env.example .env 填 key，若代码不读它，
+    key 永不生效。轻量实现，不引入 python-dotenv 依赖。
+    设置环境变量 CN_LLM_ROUTER_NO_DOTENV=1 可禁用（测试/CI 隔离用）。
+    """
+    global _dotenv_loaded
+    if os.environ.get("CN_LLM_ROUTER_NO_DOTENV"):
+        return
+    if path is None and _dotenv_loaded:
+        return
+    dotenv = path or (PACKAGE_ROOT / ".env")
+    if not dotenv.exists():
+        return
+    for line in dotenv.read_text(encoding="utf-8").splitlines():
+        line = line.strip()
+        if not line or line.startswith("#") or "=" not in line:
+            continue
+        key, _, val = line.partition("=")
+        key = key.strip()
+        if not key or key in os.environ:  # 已有环境变量优先（如 shell 已 export）
+            continue
+        val = val.strip()
+        if len(val) >= 2 and val[0] == val[-1] and val[0] in ("'", '"'):
+            val = val[1:-1]  # 去引号
+        os.environ[key] = val
+    if path is None:
+        _dotenv_loaded = True
+
 
 @dataclass
 class ProviderSpec:
@@ -85,7 +118,11 @@ def resolve_dirs(config_dir: Optional[str]) -> tuple[Path, Path]:
 
 
 def load_config(config_dir: Optional[str] = None) -> RouterConfig:
-    """加载配置：providers.yaml（缺省用 providers.example.yaml）、classifier.yaml、weights.yaml 覆盖。"""
+    """加载配置：providers.yaml（缺省用 providers.example.yaml）、classifier.yaml、weights.yaml 覆盖。
+
+    同时加载仓库根 .env 中的 key/覆盖项到 os.environ（若存在）。
+    """
+    _load_dotenv()
     data_dir, cdir = resolve_dirs(config_dir)
     cfg = RouterConfig(data_dir=data_dir, config_dir=cdir)
 
