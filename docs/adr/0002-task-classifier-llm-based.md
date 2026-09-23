@@ -19,6 +19,7 @@
 
 - 输出 JSON：`{category, complexity, confidence, second_guess}`；`raw_reason` 仅 debug 模式输出。
 - 降级链：LLM 失败 → 规则关键词快速兜底（命中明确关键词直接定类）→ 默认值"知识问答/检索 + 中复杂度"兜底；两层均标记 `low_confidence` 并带降级原因，不静默。
+- 可用性（第 4 轮确认）：分类器配置为"候选模型列表"（如 `[GLM-5.3-Flash, DeepSeek-V4-Flash]`），按供应商可用性取第一个可用者；全不可用才走规则兜底（见 ADR-0005）。
 
 ## 备选
 
