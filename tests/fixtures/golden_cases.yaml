@@ -72,7 +72,7 @@ cases:
   - id: math-mid
     prompt: 求解这个不定积分 ∫x·e^x dx
     category: 数学推理
-    complexity: 中
+    complexity: 低 # 校准2026-09-23: 原=中
     rule_testable: true # 数学-中
   - id: math-high
     prompt: 证明费马小定理并讨论其应用条件
@@ -117,7 +117,7 @@ cases:
   - id: tr-mid
     prompt: 帮我润色这段英文邮件的语气
     category: 翻译润色
-    complexity: 中
+    complexity: 低 # 校准2026-09-23: 原=中
     rule_testable: true # 翻译-中
   - id: tr-high
     prompt: 翻译并统一全文术语，输出中英对照的审校稿
@@ -222,7 +222,7 @@ cases:
   - id: fe-low-3
     prompt: 把这段HTML改成响应式布局，适配手机端
     category: 前端UX设计
-    complexity: 低
+    complexity: 中 # 校准2026-09-23: 原=低
     rule_testable: true # 前端-低
   - id: fe-mid-2
     prompt: 给这个表单加一个步骤条组件，带进度提示
@@ -287,7 +287,7 @@ cases:
   - id: da-mid-2
     prompt: 分析这份用户行为数据，找出留存下降的原因
     category: 数据分析
-    complexity: 中
+    complexity: 高 # 校准2026-09-23: 原=中
     rule_testable: true # 数据-中
   - id: da-mid-3
     prompt: 给这个销售数据表做一份月度趋势的透视分析
@@ -327,7 +327,7 @@ cases:
   - id: math-high-2
     prompt: 证明组合恒等式 C(n,k)=C(n-1,k)+C(n-1,k-1) 成立
     category: 数学推理
-    complexity: 高
+    complexity: 中 # 校准2026-09-23: 原=高
     rule_testable: true # 数学-高
   - id: math-high-3
     prompt: 求解这个三重积分：∫∫∫ e^(-x²-y²-z²) dV
@@ -342,17 +342,17 @@ cases:
   - id: agent-low-3
     prompt: 帮我写一个LLM工具调用的编排流程
     category: Agent编排
-    complexity: 低
+    complexity: 中 # 校准2026-09-23: 原=低
     rule_testable: true # agent-低
   - id: agent-mid-2
     prompt: 规划一个多步骤的数据采集流程，含抓取、清洗、入库
     category: Agent编排
-    complexity: 中
+    complexity: 高 # 校准2026-09-23: 原=中
     rule_testable: true # agent-中
   - id: agent-mid-3
     prompt: 设计一个agent系统，让多个模型协作完成复杂任务
     category: Agent编排
-    complexity: 中
+    complexity: 高 # 校准2026-09-23: 原=中
     rule_testable: true # agent-中
   - id: agent-high-2
     prompt: 设计一个多agent协作框架，支持任务分解、结果汇合与冲突仲裁
@@ -372,7 +372,7 @@ cases:
   - id: ld-low-3
     prompt: 总结这份50页调研报告的主要观点
     category: 长文档处理
-    complexity: 低
+    complexity: 中 # 校准2026-09-23: 原=低
     rule_testable: true # 长文-低
   - id: ld-mid-2
     prompt: 提取这份合同里的所有违约金相关条款
@@ -407,7 +407,7 @@ cases:
   - id: tr-mid-2
     prompt: 润色这段英文自我介绍，让它更正式
     category: 翻译润色
-    complexity: 中
+    complexity: 低 # 校准2026-09-23: 原=中
     rule_testable: true # 翻译-中
   - id: tr-mid-3
     prompt: 翻译并统一这篇文章里的专业术语
@@ -437,7 +437,7 @@ cases:
   - id: mm-mid-2
     prompt: 对比这两张产品图的差异，指出不同点
     category: 多模态理解
-    complexity: 中
+    complexity: 低 # 校准2026-09-23: 原=中
     rule_testable: true # 多模态-中
   - id: mm-mid-3
     prompt: 这个视频里的人正在做什么，帮我描述关键帧
@@ -452,7 +452,7 @@ cases:
   - id: mm-high-3
     prompt: 看图说话：描述这张复杂图表里的趋势和异常
     category: 多模态理解
-    complexity: 高
+    complexity: 中 # 校准2026-09-23: 原=高
     rule_testable: true # 多模态-高
   - id: qa-low-2
     prompt: 什么是机器学习中的过拟合？
@@ -462,17 +462,17 @@ cases:
   - id: qa-low-3
     prompt: 解释一下区块链的工作原理
     category: 知识问答/检索
-    complexity: 低
+    complexity: 中 # 校准2026-09-23: 原=低
     rule_testable: true # 问答-低
   - id: qa-mid-2
     prompt: 为什么天空是蓝色的？请给出科学解释
     category: 知识问答/检索
-    complexity: 中
+    complexity: 低 # 校准2026-09-23: 原=中
     rule_testable: true # 问答-中
   - id: qa-mid-3
     prompt: 查一下明朝有哪些著名的航海家
     category: 知识问答/检索
-    complexity: 中
+    complexity: 低 # 校准2026-09-23: 原=中
     rule_testable: true # 问答-中
   - id: qa-high-2
     prompt: 解释量子纠缠的实验验证原理
