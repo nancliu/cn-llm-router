@@ -6,6 +6,10 @@
 #   openai  —— OpenAI 兼容端点直连（base_url + api_key），默认行为
 #   litellm —— 经 LiteLLM 直连（provider/api_model 组合路由、API 统一），需安装 cn-llm-router[litellm]
 # 示例：backend: litellm
+#
+# 环境变量覆盖（可选）：{KEY_ENV 去 _API_KEY 后缀}_BASE_URL（如 ZHIPU_BASE_URL）存在且非空时，
+# 覆盖该 provider 的 base_url——用于自建网关/中转端点；未配置时用 yaml 的 base_url。
+# 注意：api_model 差异（套餐端点模型 ID 与官方名可能不同）请直接在 yaml 中修改。
 providers:
   GLM-5.3-Flash:
     provider: zhipu

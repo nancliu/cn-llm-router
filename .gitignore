@@ -5,6 +5,7 @@ venv/
 .env
 .env.*
 !.env.example
+config/providers.yaml
 .DS_Store
 *.log
 dist/

@@ -96,12 +96,20 @@ def load_config(config_dir: Optional[str] = None) -> RouterConfig:
     prow = _read_yaml(pfile)
     providers: dict[str, ProviderSpec] = {}
     for logical, spec in prow.get("providers", {}).items():
+        key_env = str(spec.get("key_env", f"{ENV_PREFIX}{logical.upper().replace('-', '_')}_KEY"))
+        base_url = str(spec.get("base_url", ""))
+        # 环境变量覆盖 base_url：{KEY_ENV 去 _API_KEY 后缀}_BASE_URL（如 ZHIPU_BASE_URL）
+        # 用于自建网关/中转端点；未配置时回退 yaml 默认值。
+        if key_env.endswith("_API_KEY"):
+            env_base = os.environ.get(key_env[: -len("_API_KEY")] + "_BASE_URL")
+            if env_base:
+                base_url = env_base
         providers[logical] = ProviderSpec(
             logical_name=logical,
             provider=str(spec.get("provider", "")),
-            base_url=str(spec.get("base_url", "")),
+            base_url=base_url,
             api_model=str(spec.get("api_model", logical)),
-            key_env=str(spec.get("key_env", f"{ENV_PREFIX}{logical.upper().replace('-', '_')}_KEY")),
+            key_env=key_env,
             timeout=float(spec.get("timeout", 60.0)),
             backend=str(spec.get("backend", "openai")),
         )
