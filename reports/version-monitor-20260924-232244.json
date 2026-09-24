@@ -1,0 +1,598 @@
+{
+  "generated_at": "2026-09-24T23:22:44",
+  "total": 15,
+  "summary": {
+    "无变化": 0,
+    "有变更": 9,
+    "抓取失败": 0,
+    "待补充": 6,
+    "可达": 0
+  },
+  "models": [
+    {
+      "logical_name": "DeepSeek-V4-Pro-0813",
+      "vendor": "深度求索 DeepSeek",
+      "source_url": "https://api-docs.deepseek.com/zh-cn/quick_start/pricing/",
+      "fetched_at": "2026-09-24T23:22:37",
+      "http_status": 200,
+      "status": "有变更",
+      "error": null,
+      "fields": {
+        "version": {
+          "old": "2026-08-13",
+          "new": "v4-pro",
+          "status": "有变更",
+          "writable": true,
+          "note": null
+        },
+        "price_in": {
+          "old": "9.0",
+          "new": 0.02,
+          "status": "有变更",
+          "writable": true,
+          "note": null
+        },
+        "price_out": {
+          "old": "27.0",
+          "new": 384.0,
+          "status": "有变更",
+          "writable": true,
+          "note": null
+        },
+        "context_window": {
+          "old": "1M tokens (max output 384K)",
+          "new": null,
+          "status": "待补充",
+          "writable": false,
+          "note": null
+        }
+      }
+    },
+    {
+      "logical_name": "DeepSeek-V4-Flash-0731",
+      "vendor": "深度求索 DeepSeek",
+      "source_url": "https://docs.volcengine.com/docs/82379/1544106",
+      "fetched_at": "2026-09-24T23:22:37",
+      "http_status": 200,
+      "status": "待补充",
+      "error": null,
+      "fields": {
+        "version": {
+          "old": "2026-07-31",
+          "new": null,
+          "status": "待补充",
+          "writable": false,
+          "note": null
+        },
+        "price_in": {
+          "old": "3.0",
+          "new": null,
+          "status": "待补充",
+          "writable": false,
+          "note": null
+        },
+        "price_out": {
+          "old": "9.0",
+          "new": null,
+          "status": "待补充",
+          "writable": false,
+          "note": null
+        },
+        "context_window": {
+          "old": "1M tokens",
+          "new": null,
+          "status": "待补充",
+          "writable": false,
+          "note": null
+        }
+      }
+    },
+    {
+      "logical_name": "DeepSeek-V4.1-Flash-CED",
+      "vendor": "深度求索 DeepSeek",
+      "source_url": "https://api-docs.deepseek.com/zh-cn/quick_start/pricing/",
+      "fetched_at": "2026-09-24T23:22:38",
+      "http_status": 200,
+      "status": "有变更",
+      "error": null,
+      "fields": {
+        "version": {
+          "old": "2026-09-10",
+          "new": "v4-pro",
+          "status": "有变更",
+          "writable": true,
+          "note": null
+        },
+        "price_in": {
+          "old": "2.0",
+          "new": 0.02,
+          "status": "有变更",
+          "writable": true,
+          "note": null
+        },
+        "price_out": {
+          "old": "8.0",
+          "new": 384.0,
+          "status": "有变更",
+          "writable": true,
+          "note": null
+        },
+        "context_window": {
+          "old": "1M tokens (max output 384K)",
+          "new": null,
+          "status": "待补充",
+          "writable": false,
+          "note": null
+        }
+      }
+    },
+    {
+      "logical_name": "Qwen3.8-Max-0902",
+      "vendor": "阿里巴巴",
+      "source_url": "https://help.aliyun.com/en/model-studio/qwen3-8-max",
+      "fetched_at": "2026-09-24T23:22:39",
+      "http_status": 200,
+      "status": "有变更",
+      "error": null,
+      "fields": {
+        "version": {
+          "old": "2026-09-10",
+          "new": "2026-09-02",
+          "status": "有变更",
+          "writable": true,
+          "note": null
+        },
+        "price_in": {
+          "old": "12.0",
+          "new": null,
+          "status": "待补充",
+          "writable": false,
+          "note": null
+        },
+        "price_out": {
+          "old": "36.0",
+          "new": null,
+          "status": "待补充",
+          "writable": false,
+          "note": null
+        },
+        "context_window": {
+          "old": "1M tokens (max output 131K)",
+          "new": "1000000M",
+          "status": "有变更",
+          "writable": true,
+          "note": null
+        }
+      }
+    },
+    {
+      "logical_name": "Kimi-K3",
+      "vendor": "月之暗面 Moonshot AI",
+      "source_url": "https://platform.kimi.com/",
+      "fetched_at": "2026-09-24T23:22:39",
+      "http_status": 200,
+      "status": "有变更",
+      "error": null,
+      "fields": {
+        "version": {
+          "old": "2026-07-16",
+          "new": null,
+          "status": "待补充",
+          "writable": false,
+          "note": null
+        },
+        "price_in": {
+          "old": "20.0",
+          "new": 20.0,
+          "status": "无变化",
+          "writable": true,
+          "note": null
+        },
+        "price_out": {
+          "old": "100.0",
+          "new": 100.0,
+          "status": "无变化",
+          "writable": true,
+          "note": null
+        },
+        "context_window": {
+          "old": "1M tokens",
+          "new": "1Mtokens",
+          "status": "有变更",
+          "writable": true,
+          "note": null
+        }
+      }
+    },
+    {
+      "logical_name": "Kimi-K2.7-Code",
+      "vendor": "月之暗面 Moonshot AI",
+      "source_url": "https://platform.kimi.com/",
+      "fetched_at": "2026-09-24T23:22:39",
+      "http_status": 200,
+      "status": "有变更",
+      "error": null,
+      "fields": {
+        "version": {
+          "old": "待补充",
+          "new": null,
+          "status": "待补充",
+          "writable": false,
+          "note": null
+        },
+        "price_in": {
+          "old": "6.5",
+          "new": 20.0,
+          "status": "有变更",
+          "writable": true,
+          "note": null
+        },
+        "price_out": {
+          "old": "27.0",
+          "new": 100.0,
+          "status": "有变更",
+          "writable": true,
+          "note": null
+        },
+        "context_window": {
+          "old": "待补充",
+          "new": "1Mtokens",
+          "status": "有变更",
+          "writable": true,
+          "note": null
+        }
+      }
+    },
+    {
+      "logical_name": "GLM-5.2",
+      "vendor": "智谱 AI",
+      "source_url": "https://bigmodel.cn/pricing",
+      "fetched_at": "2026-09-24T23:22:40",
+      "http_status": 200,
+      "status": "待补充",
+      "error": null,
+      "fields": {
+        "version": {
+          "old": "2026-06-17",
+          "new": null,
+          "status": "待补充",
+          "writable": false,
+          "note": null
+        },
+        "price_in": {
+          "old": "8.0",
+          "new": null,
+          "status": "待补充",
+          "writable": false,
+          "note": null
+        },
+        "price_out": {
+          "old": "28.0",
+          "new": null,
+          "status": "待补充",
+          "writable": false,
+          "note": null
+        },
+        "context_window": {
+          "old": "1M tokens 无损",
+          "new": null,
+          "status": "待补充",
+          "writable": false,
+          "note": null
+        }
+      }
+    },
+    {
+      "logical_name": "GLM-5.3",
+      "vendor": "智谱 AI",
+      "source_url": "https://bigmodel.cn/pricing",
+      "fetched_at": "2026-09-24T23:22:40",
+      "http_status": 200,
+      "status": "待补充",
+      "error": null,
+      "fields": {
+        "version": {
+          "old": "2026-09上旬",
+          "new": null,
+          "status": "待补充",
+          "writable": false,
+          "note": null
+        },
+        "price_in": {
+          "old": "8.0",
+          "new": null,
+          "status": "待补充",
+          "writable": false,
+          "note": null
+        },
+        "price_out": {
+          "old": "28.0",
+          "new": null,
+          "status": "待补充",
+          "writable": false,
+          "note": null
+        },
+        "context_window": {
+          "old": "1M tokens (仅文本)",
+          "new": null,
+          "status": "待补充",
+          "writable": false,
+          "note": null
+        }
+      }
+    },
+    {
+      "logical_name": "GLM-5.3-Flash",
+      "vendor": "智谱 AI",
+      "source_url": "https://bigmodel.cn/pricing",
+      "fetched_at": "2026-09-24T23:22:40",
+      "http_status": 200,
+      "status": "待补充",
+      "error": null,
+      "fields": {
+        "version": {
+          "old": "2026-08-26",
+          "new": null,
+          "status": "待补充",
+          "writable": false,
+          "note": null
+        },
+        "price_in": {
+          "old": "0.8",
+          "new": null,
+          "status": "待补充",
+          "writable": false,
+          "note": null
+        },
+        "price_out": {
+          "old": "2.8",
+          "new": null,
+          "status": "待补充",
+          "writable": false,
+          "note": null
+        },
+        "context_window": {
+          "old": "1M tokens",
+          "new": null,
+          "status": "待补充",
+          "writable": false,
+          "note": null
+        }
+      }
+    },
+    {
+      "logical_name": "豆包Seed-2.1-Pro",
+      "vendor": "字节跳动",
+      "source_url": "https://docs.volcengine.com/docs/82379/1544106",
+      "fetched_at": "2026-09-24T23:22:40",
+      "http_status": 200,
+      "status": "待补充",
+      "error": null,
+      "fields": {
+        "version": {
+          "old": "2026-06-23",
+          "new": null,
+          "status": "待补充",
+          "writable": false,
+          "note": null
+        },
+        "price_in": {
+          "old": "6.0",
+          "new": null,
+          "status": "待补充",
+          "writable": false,
+          "note": null
+        },
+        "price_out": {
+          "old": "30.0",
+          "new": null,
+          "status": "待补充",
+          "writable": false,
+          "note": null
+        },
+        "context_window": {
+          "old": "待核实(256k vs 1024k)",
+          "new": null,
+          "status": "待补充",
+          "writable": false,
+          "note": null
+        }
+      }
+    },
+    {
+      "logical_name": "Seedream-5.0",
+      "vendor": "字节跳动",
+      "source_url": "https://ark.volcengine.com/region:cn-beijing/model/detail?name=doubao-seedream-5-0",
+      "fetched_at": "2026-09-24T23:22:41",
+      "http_status": 200,
+      "status": "待补充",
+      "error": null,
+      "fields": {
+        "version": {
+          "old": "2026-06-23",
+          "new": null,
+          "status": "待补充",
+          "writable": false,
+          "note": null
+        },
+        "price_in": {
+          "old": "",
+          "new": null,
+          "status": "待补充",
+          "writable": false,
+          "note": null
+        },
+        "price_out": {
+          "old": "",
+          "new": null,
+          "status": "待补充",
+          "writable": false,
+          "note": null
+        },
+        "context_window": {
+          "old": "N/A (图像生成)",
+          "new": null,
+          "status": "待补充",
+          "writable": false,
+          "note": null
+        }
+      }
+    },
+    {
+      "logical_name": "腾讯混元Hy3",
+      "vendor": "腾讯",
+      "source_url": "https://cloud.tencent.com/document/product/1823/130055",
+      "fetched_at": "2026-09-24T23:22:42",
+      "http_status": 200,
+      "status": "有变更",
+      "error": null,
+      "fields": {
+        "version": {
+          "old": "2026-07-06",
+          "new": "V07",
+          "status": "有变更",
+          "writable": true,
+          "note": null
+        },
+        "price_in": {
+          "old": "1.0",
+          "new": null,
+          "status": "待补充",
+          "writable": false,
+          "note": null
+        },
+        "price_out": {
+          "old": "4.0",
+          "new": null,
+          "status": "待补充",
+          "writable": false,
+          "note": null
+        },
+        "context_window": {
+          "old": "待补充",
+          "new": null,
+          "status": "待补充",
+          "writable": false,
+          "note": null
+        }
+      }
+    },
+    {
+      "logical_name": "腾讯混元Hy4-preview",
+      "vendor": "腾讯",
+      "source_url": "https://cloud.tencent.com/document/product/1823/130055",
+      "fetched_at": "2026-09-24T23:22:42",
+      "http_status": 200,
+      "status": "有变更",
+      "error": null,
+      "fields": {
+        "version": {
+          "old": "2026-08-28",
+          "new": "V07",
+          "status": "有变更",
+          "writable": true,
+          "note": null
+        },
+        "price_in": {
+          "old": "6.0",
+          "new": null,
+          "status": "待补充",
+          "writable": false,
+          "note": null
+        },
+        "price_out": {
+          "old": "18.0",
+          "new": null,
+          "status": "待补充",
+          "writable": false,
+          "note": null
+        },
+        "context_window": {
+          "old": "1M (max input 960K/output 64K)",
+          "new": null,
+          "status": "待补充",
+          "writable": false,
+          "note": null
+        }
+      }
+    },
+    {
+      "logical_name": "讯飞星火X2.5",
+      "vendor": "科大讯飞",
+      "source_url": "https://static.xfyun.cn/doc/spark/TokenPlan.html",
+      "fetched_at": "2026-09-24T23:22:43",
+      "http_status": 200,
+      "status": "有变更",
+      "error": null,
+      "fields": {
+        "version": {
+          "old": "2026-09-07",
+          "new": "2026-07-02",
+          "status": "有变更",
+          "writable": true,
+          "note": null
+        },
+        "price_in": {
+          "old": "1.6",
+          "new": 650.0,
+          "status": "有变更",
+          "writable": true,
+          "note": null
+        },
+        "price_out": {
+          "old": "6.0",
+          "new": 3.2,
+          "status": "有变更",
+          "writable": true,
+          "note": null
+        },
+        "context_window": {
+          "old": "256K",
+          "new": "96k",
+          "status": "有变更",
+          "writable": true,
+          "note": null
+        }
+      }
+    },
+    {
+      "logical_name": "MiniMax-M3",
+      "vendor": "稀宇科技 MiniMax",
+      "source_url": "https://platform.minimaxi.com/docs/guides/pricing-paygo",
+      "fetched_at": "2026-09-24T23:22:43",
+      "http_status": 200,
+      "status": "有变更",
+      "error": null,
+      "fields": {
+        "version": {
+          "old": "2026-06-01",
+          "new": "2026-07-22",
+          "status": "有变更",
+          "writable": true,
+          "note": null
+        },
+        "price_in": {
+          "old": "3.15",
+          "new": 3.0,
+          "status": "有变更",
+          "writable": true,
+          "note": null
+        },
+        "price_out": {
+          "old": "12.6",
+          "new": 3.0,
+          "status": "有变更",
+          "writable": true,
+          "note": null
+        },
+        "context_window": {
+          "old": "1M (计费按512k分档)",
+          "new": null,
+          "status": "待补充",
+          "writable": false,
+          "note": null
+        }
+      }
+    }
+  ]
+}
