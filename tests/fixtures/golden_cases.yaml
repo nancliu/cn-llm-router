@@ -544,3 +544,364 @@ cases:
     category: 代码审查与调试
     complexity: 高
     rule_testable: true # 审查-高
+  # ---- 2026-09-24 P2-b 扩充：每格 +2 题（-4/-5），总数 108 -> 180 ----
+  - id: prog-low-4
+    prompt: 帮我写个函数把列表里的重复元素去掉
+    category: 程序编码
+    complexity: 低
+    rule_testable: true # 编码-低
+  - id: prog-low-5
+    prompt: 用Python写一个读取txt文件并统计行数的脚本
+    category: 程序编码
+    complexity: 低
+    rule_testable: true # 编码-低
+  - id: prog-mid-4
+    prompt: 用Python实现一个线程池，限制并发任务数量
+    category: 程序编码
+    complexity: 中
+    rule_testable: true # 编码-中
+  - id: prog-mid-5
+    prompt: 写一个shell脚本批量备份MySQL数据库表
+    category: 程序编码
+    complexity: 中
+    rule_testable: true # 编码-中
+  - id: prog-high-4
+    prompt: 设计一个高可用的分布式消息队列，支持持久化、顺序消费与死信队列
+    category: 程序编码
+    complexity: 高
+    rule_testable: false # 编码-高（系统设计无明确关键词）
+  - id: prog-high-5
+    prompt: 用算法实现一个一致性哈希环，支持节点上下线时的最小数据迁移
+    category: 程序编码
+    complexity: 高
+    rule_testable: true # 编码-高
+  - id: fe-low-4
+    prompt: 写一个按钮组件的CSS，hover时背景变色
+    category: 前端UX设计
+    complexity: 低
+    rule_testable: true # 前端-低
+  - id: fe-low-5
+    prompt: 做一个商品卡片的HTML页面，带图片占位框
+    category: 前端UX设计
+    complexity: 低
+    rule_testable: true # 前端-低
+  - id: fe-mid-4
+    prompt: 用CSS写一个导航栏的下拉菜单样式
+    category: 前端UX设计
+    complexity: 中
+    rule_testable: true # 前端-中
+  - id: fe-mid-5
+    prompt: 给这个Vue组件加上表单校验和错误提示样式
+    category: 前端UX设计
+    complexity: 中
+    rule_testable: true # 前端-中
+  - id: fe-high-4
+    prompt: 设计一个跨端组件库的无障碍交互规范，含键盘导航与读屏支持
+    category: 前端UX设计
+    complexity: 高
+    rule_testable: true # 前端-高
+  - id: fe-high-5
+    prompt: 设计这个前端页面的渲染优化方案，实现百万级数据的无缝滚动
+    category: 前端UX设计
+    complexity: 高
+    rule_testable: true # 前端-高
+  - id: doc-low-4
+    prompt: 帮我写一份部门月度考勤通知
+    category: 文书撰写
+    complexity: 低
+    rule_testable: true # 文书-低
+  - id: doc-low-5
+    prompt: 写一个项目验收的邮件正文模板
+    category: 文书撰写
+    complexity: 低
+    rule_testable: true # 文书-低
+  - id: doc-mid-4
+    prompt: 起草一份公司年会活动策划方案
+    category: 文书撰写
+    complexity: 中
+    rule_testable: true # 文书-中
+  - id: doc-mid-5
+    prompt: 写一份新员工入职培训的总结材料
+    category: 文书撰写
+    complexity: 中
+    rule_testable: true # 文书-中
+  - id: doc-high-4
+    prompt: 撰写一份公司年度战略发展报告，含市场与资源章节
+    category: 文书撰写
+    complexity: 高
+    rule_testable: true # 文书-高
+  - id: doc-high-5
+    prompt: 写一份产品立项方案，含功能清单与验收标准
+    category: 文书撰写
+    complexity: 高
+    rule_testable: true # 文书-高
+  - id: da-low-4
+    prompt: 用SQL统计每个部门的人数
+    category: 数据分析
+    complexity: 低
+    rule_testable: true # 数据-低
+  - id: da-low-5
+    prompt: 给这个表格做个按月份汇总的透视表
+    category: 数据分析
+    complexity: 低
+    rule_testable: true # 数据-低
+  - id: da-mid-4
+    prompt: 分析这份用户留存数据，找出下降拐点并出图表
+    category: 数据分析
+    complexity: 中
+    rule_testable: true # 数据-中
+  - id: da-mid-5
+    prompt: 给销售数据做按区域的环比趋势分析
+    category: 数据分析
+    complexity: 中
+    rule_testable: true # 数据-中
+  - id: da-high-4
+    prompt: 搭建一套实时数据指标看板，含告警阈值与下钻分析
+    category: 数据分析
+    complexity: 高
+    rule_testable: true # 数据-高
+  - id: da-high-5
+    prompt: 设计一个用户分群模型，基于RFM做价值分层与运营策略
+    category: 数据分析
+    complexity: 高
+    rule_testable: false # 数据-高（无明确关键词）
+  - id: math-low-4
+    prompt: 解一元二次方程 x²-5x+6=0
+    category: 数学推理
+    complexity: 低
+    rule_testable: true # 数学-低
+  - id: math-low-5
+    prompt: 计算从5个球里选2个的组合数
+    category: 数学推理
+    complexity: 低
+    rule_testable: true # 数学-低
+  - id: math-mid-4
+    prompt: 推导贝叶斯公式的后验概率表达式
+    category: 数学推理
+    complexity: 中
+    rule_testable: true # 数学-中
+  - id: math-mid-5
+    prompt: 证明勾股定理并给出几何直观解释
+    category: 数学推理
+    complexity: 中
+    rule_testable: true # 数学-中
+  - id: math-high-4
+    prompt: 证明中心极限定理并说明其在统计推断中的作用
+    category: 数学推理
+    complexity: 高
+    rule_testable: true # 数学-高
+  - id: math-high-5
+    prompt: 推导高斯过程回归的核函数选择与超参数优化
+    category: 数学推理
+    complexity: 高
+    rule_testable: true # 数学-高
+  - id: agent-low-4
+    prompt: 帮我把这个任务拆成两个串行的子任务
+    category: Agent编排
+    complexity: 低
+    rule_testable: true # agent-低
+  - id: agent-low-5
+    prompt: 规划一个抓取网页并入库的简单流程
+    category: Agent编排
+    complexity: 低
+    rule_testable: true # agent-低
+  - id: agent-mid-4
+    prompt: 设计一个工具调用链，让LLM自动查资料并汇总结果
+    category: Agent编排
+    complexity: 中
+    rule_testable: true # agent-中
+  - id: agent-mid-5
+    prompt: 把这个客服工单流程拆成意图识别、检索、回复三个环节
+    category: Agent编排
+    complexity: 中
+    rule_testable: true # agent-中
+  - id: agent-high-4
+    prompt: 设计一个multi-agent辩论框架，含角色分工、投票裁决与反思回路
+    category: Agent编排
+    complexity: 高
+    rule_testable: true # agent-高
+  - id: agent-high-5
+    prompt: 设计一个任务编排系统，支持节点重试、超时熔断与人工介入
+    category: Agent编排
+    complexity: 高
+    rule_testable: true # agent-高
+  - id: ld-low-4
+    prompt: 帮我读一下这篇论文，提炼核心结论
+    category: 长文档处理
+    complexity: 低
+    rule_testable: true # 长文-低
+  - id: ld-low-5
+    prompt: 给这本技术书籍写个一句话推荐语
+    category: 长文档处理
+    complexity: 低
+    rule_testable: true # 长文-低
+  - id: ld-mid-4
+    prompt: 从这份50页的产品手册中提取功能清单
+    category: 长文档处理
+    complexity: 中
+    rule_testable: true # 长文-中
+  - id: ld-mid-5
+    prompt: 对比这两篇论文的研究方法差异
+    category: 长文档处理
+    complexity: 中
+    rule_testable: true # 长文-中
+  - id: ld-high-4
+    prompt: 对这篇百页博士论文做结构化精读，梳理问题、方法与贡献
+    category: 长文档处理
+    complexity: 高
+    rule_testable: true # 长文-高
+  - id: ld-high-5
+    prompt: 整理这套会议录音转写稿，提炼决策事项与待办清单
+    category: 长文档处理
+    complexity: 高
+    rule_testable: false # 长文-高（无明确关键词）
+  - id: tr-low-4
+    prompt: 把这句中文翻译成日文
+    category: 翻译润色
+    complexity: 低
+    rule_testable: true # 翻译-低
+  - id: tr-low-5
+    prompt: 把这段英文翻译成通顺的中文
+    category: 翻译润色
+    complexity: 低
+    rule_testable: true # 翻译-低
+  - id: tr-mid-4
+    prompt: 润色这封求职信，让措辞更专业
+    category: 翻译润色
+    complexity: 中
+    rule_testable: true # 翻译-中
+  - id: tr-mid-5
+    prompt: 把这份产品说明翻译成英文并统一术语
+    category: 翻译润色
+    complexity: 中
+    rule_testable: true # 翻译-中
+  - id: tr-high-4
+    prompt: 将这部学术著作全文翻译，保持论证严谨性与文体风格
+    category: 翻译润色
+    complexity: 高
+    rule_testable: true # 翻译-高
+  - id: tr-high-5
+    prompt: 翻译并校对这份技术专利，确保法律术语准确无误
+    category: 翻译润色
+    complexity: 高
+    rule_testable: true # 翻译-高
+  - id: mm-low-4
+    prompt: 告诉我这张图片里画的是什么
+    category: 多模态理解
+    complexity: 低
+    rule_testable: true # 多模态-低
+  - id: mm-low-5
+    prompt: 把这张照片里的文字OCR出来
+    category: 多模态理解
+    complexity: 低
+    rule_testable: true # 多模态-低
+  - id: mm-mid-4
+    prompt: 对比这两张图片的界面差异
+    category: 多模态理解
+    complexity: 中
+    rule_testable: true # 多模态-中
+  - id: mm-mid-5
+    prompt: 描述这张流程图里各个节点的连接关系
+    category: 多模态理解
+    complexity: 中
+    rule_testable: true # 多模态-中
+  - id: mm-high-4
+    prompt: 根据这组实验照片，还原完整的实验装置与操作步骤
+    category: 多模态理解
+    complexity: 高
+    rule_testable: true # 多模态-高
+  - id: mm-high-5
+    prompt: 解读这张信息图里的设计元素与信息层次
+    category: 多模态理解
+    complexity: 高
+    rule_testable: true # 多模态-高
+  - id: qa-low-4
+    prompt: 什么是云计算中的Serverless架构
+    category: 知识问答/检索
+    complexity: 低
+    rule_testable: true # 问答-低
+  - id: qa-low-5
+    prompt: 解释一下什么是容器化技术
+    category: 知识问答/检索
+    complexity: 低
+    rule_testable: true # 问答-低
+  - id: qa-mid-4
+    prompt: 介绍一下中国四大发明及其影响
+    category: 知识问答/检索
+    complexity: 中
+    rule_testable: true # 问答-中
+  - id: qa-mid-5
+    prompt: 查一下2026年诺贝尔物理学奖得主
+    category: 知识问答/检索
+    complexity: 中
+    rule_testable: true # 问答-中
+  - id: qa-high-4
+    prompt: 梳理大模型预训练数据清洗的主要方法与争议
+    category: 知识问答/检索
+    complexity: 高
+    rule_testable: false # 问答-高（综述型无明确关键词）
+  - id: qa-high-5
+    prompt: 介绍注意力机制的数学原理与复杂度来源
+    category: 知识问答/检索
+    complexity: 高
+    rule_testable: true # 问答-高
+  - id: cr-low-4
+    prompt: 给新开业的健身房起5个名字
+    category: 创意生成
+    complexity: 低
+    rule_testable: true # 创意-低
+  - id: cr-low-5
+    prompt: 给这款新品想一个 catchy 的广告语
+    category: 创意生成
+    complexity: 低
+    rule_testable: true # 创意-低
+  - id: cr-mid-4
+    prompt: 为一款母婴APP写三篇不同风格的小红书文案
+    category: 创意生成
+    complexity: 中
+    rule_testable: true # 创意-中
+  - id: cr-mid-5
+    prompt: 头脑风暴20个提升用户活跃度的产品点子
+    category: 创意生成
+    complexity: 中
+    rule_testable: true # 创意-中
+  - id: cr-high-4
+    prompt: 为品牌出海做一套完整的社媒创意内容日历
+    category: 创意生成
+    complexity: 高
+    rule_testable: true # 创意-高
+  - id: cr-high-5
+    prompt: 写一部短篇小说的完整大纲，含三幕结构与人物弧光
+    category: 创意生成
+    complexity: 高
+    rule_testable: false # 创意-高（语义判断）
+  - id: crv-low-4
+    prompt: 这段代码运行报错了，帮我定位原因
+    category: 代码审查与调试
+    complexity: 低
+    rule_testable: true # 审查-低
+  - id: crv-low-5
+    prompt: 帮我检查这段代码里的语法错误
+    category: 代码审查与调试
+    complexity: 低
+    rule_testable: true # 审查-低
+  - id: crv-mid-4
+    prompt: 审查这段微服务代码的日志和错误处理是否规范
+    category: 代码审查与调试
+    complexity: 中
+    rule_testable: true # 审查-中
+  - id: crv-mid-5
+    prompt: 分析这段接口代码的性能瓶颈并优化
+    category: 代码审查与调试
+    complexity: 中
+    rule_testable: true # 审查-中
+  - id: crv-high-4
+    prompt: 给这个算法核心模块补全单元测试，覆盖异常分支
+    category: 代码审查与调试
+    complexity: 高
+    rule_testable: true # 审查-高
+  - id: crv-high-5
+    prompt: 审查这段支付链路代码的并发安全与资金一致性问题
+    category: 代码审查与调试
+    complexity: 高
+    rule_testable: true # 审查-高

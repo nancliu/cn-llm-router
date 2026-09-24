@@ -1,0 +1,451 @@
+{
+  "scenario_count": 15,
+  "results": [
+    {
+      "model": "Qwen3.8-Max-0902",
+      "n": 15,
+      "elapsed_s": 85.3,
+      "accuracy": 1.0,
+      "by_complexity": {
+        "中": "5/5",
+        "低": "6/6",
+        "高": "4/4"
+      },
+      "rows": [
+        {
+          "case_id": "mm-low",
+          "complexity": "低",
+          "image": "red.png",
+          "expected_color": "red",
+          "expected_keywords": [
+            "红色",
+            "红",
+            "red"
+          ],
+          "answer": "红色",
+          "hit": true,
+          "error": null
+        },
+        {
+          "case_id": "mm-mid",
+          "complexity": "中",
+          "image": "green.png",
+          "expected_color": "green",
+          "expected_keywords": [
+            "绿色",
+            "绿",
+            "green"
+          ],
+          "answer": "绿色",
+          "hit": true,
+          "error": null
+        },
+        {
+          "case_id": "mm-high",
+          "complexity": "高",
+          "image": "blue.png",
+          "expected_color": "blue",
+          "expected_keywords": [
+            "蓝色",
+            "蓝",
+            "blue"
+          ],
+          "answer": "蓝色",
+          "hit": true,
+          "error": null
+        },
+        {
+          "case_id": "mm-low-2",
+          "complexity": "低",
+          "image": "yellow.png",
+          "expected_color": "yellow",
+          "expected_keywords": [
+            "黄色",
+            "黄",
+            "yellow"
+          ],
+          "answer": "黄色",
+          "hit": true,
+          "error": null
+        },
+        {
+          "case_id": "mm-low-3",
+          "complexity": "低",
+          "image": "red.png",
+          "expected_color": "red",
+          "expected_keywords": [
+            "红色",
+            "红",
+            "red"
+          ],
+          "answer": "红色",
+          "hit": true,
+          "error": null
+        },
+        {
+          "case_id": "mm-mid-2",
+          "complexity": "低",
+          "image": "green.png",
+          "expected_color": "green",
+          "expected_keywords": [
+            "绿色",
+            "绿",
+            "green"
+          ],
+          "answer": "绿色",
+          "hit": true,
+          "error": null
+        },
+        {
+          "case_id": "mm-mid-3",
+          "complexity": "中",
+          "image": "blue.png",
+          "expected_color": "blue",
+          "expected_keywords": [
+            "蓝色",
+            "蓝",
+            "blue"
+          ],
+          "answer": "蓝色",
+          "hit": true,
+          "error": null
+        },
+        {
+          "case_id": "mm-high-2",
+          "complexity": "高",
+          "image": "yellow.png",
+          "expected_color": "yellow",
+          "expected_keywords": [
+            "黄色",
+            "黄",
+            "yellow"
+          ],
+          "answer": "黄色",
+          "hit": true,
+          "error": null
+        },
+        {
+          "case_id": "mm-high-3",
+          "complexity": "中",
+          "image": "red.png",
+          "expected_color": "red",
+          "expected_keywords": [
+            "红色",
+            "红",
+            "red"
+          ],
+          "answer": "红色",
+          "hit": true,
+          "error": null
+        },
+        {
+          "case_id": "mm-low-4",
+          "complexity": "低",
+          "image": "green.png",
+          "expected_color": "green",
+          "expected_keywords": [
+            "绿色",
+            "绿",
+            "green"
+          ],
+          "answer": "绿色",
+          "hit": true,
+          "error": null
+        },
+        {
+          "case_id": "mm-low-5",
+          "complexity": "低",
+          "image": "blue.png",
+          "expected_color": "blue",
+          "expected_keywords": [
+            "蓝色",
+            "蓝",
+            "blue"
+          ],
+          "answer": "图片中没有任何文字，OCR结果为空。\n\n主色调：蓝色",
+          "hit": true,
+          "error": null
+        },
+        {
+          "case_id": "mm-mid-4",
+          "complexity": "中",
+          "image": "yellow.png",
+          "expected_color": "yellow",
+          "expected_keywords": [
+            "黄色",
+            "黄",
+            "yellow"
+          ],
+          "answer": "黄色",
+          "hit": true,
+          "error": null
+        },
+        {
+          "case_id": "mm-mid-5",
+          "complexity": "中",
+          "image": "red.png",
+          "expected_color": "red",
+          "expected_keywords": [
+            "红色",
+            "红",
+            "red"
+          ],
+          "answer": "该图片中并没有任何流程图节点或连线，只是一张纯色色块，因此不存在节点之间的连接关系。\n\n主色调：红色",
+          "hit": true,
+          "error": null
+        },
+        {
+          "case_id": "mm-high-4",
+          "complexity": "高",
+          "image": "green.png",
+          "expected_color": "green",
+          "expected_keywords": [
+            "绿色",
+            "绿",
+            "green"
+          ],
+          "answer": "绿色",
+          "hit": true,
+          "error": null
+        },
+        {
+          "case_id": "mm-high-5",
+          "complexity": "高",
+          "image": "blue.png",
+          "expected_color": "blue",
+          "expected_keywords": [
+            "蓝色",
+            "蓝",
+            "blue"
+          ],
+          "answer": "蓝色",
+          "hit": true,
+          "error": null
+        }
+      ]
+    },
+    {
+      "model": "DeepSeek-V4.1-Flash-CED",
+      "n": 15,
+      "elapsed_s": 28.2,
+      "accuracy": 0.4,
+      "by_complexity": {
+        "中": "1/5",
+        "低": "4/6",
+        "高": "1/4"
+      },
+      "rows": [
+        {
+          "case_id": "mm-low",
+          "complexity": "低",
+          "image": "red.png",
+          "expected_color": "red",
+          "expected_keywords": [
+            "红色",
+            "红",
+            "red"
+          ],
+          "answer": "红色",
+          "hit": true,
+          "error": null
+        },
+        {
+          "case_id": "mm-mid",
+          "complexity": "中",
+          "image": "green.png",
+          "expected_color": "green",
+          "expected_keywords": [
+            "绿色",
+            "绿",
+            "green"
+          ],
+          "answer": "",
+          "hit": false,
+          "error": null
+        },
+        {
+          "case_id": "mm-high",
+          "complexity": "高",
+          "image": "blue.png",
+          "expected_color": "blue",
+          "expected_keywords": [
+            "蓝色",
+            "蓝",
+            "blue"
+          ],
+          "answer": "",
+          "hit": false,
+          "error": null
+        },
+        {
+          "case_id": "mm-low-2",
+          "complexity": "低",
+          "image": "yellow.png",
+          "expected_color": "yellow",
+          "expected_keywords": [
+            "黄色",
+            "黄",
+            "yellow"
+          ],
+          "answer": "",
+          "hit": false,
+          "error": null
+        },
+        {
+          "case_id": "mm-low-3",
+          "complexity": "低",
+          "image": "red.png",
+          "expected_color": "red",
+          "expected_keywords": [
+            "红色",
+            "红",
+            "red"
+          ],
+          "answer": "",
+          "hit": false,
+          "error": null
+        },
+        {
+          "case_id": "mm-mid-2",
+          "complexity": "低",
+          "image": "green.png",
+          "expected_color": "green",
+          "expected_keywords": [
+            "绿色",
+            "绿",
+            "green"
+          ],
+          "answer": "绿色",
+          "hit": true,
+          "error": null
+        },
+        {
+          "case_id": "mm-mid-3",
+          "complexity": "中",
+          "image": "blue.png",
+          "expected_color": "blue",
+          "expected_keywords": [
+            "蓝色",
+            "蓝",
+            "blue"
+          ],
+          "answer": "蓝色",
+          "hit": true,
+          "error": null
+        },
+        {
+          "case_id": "mm-high-2",
+          "complexity": "高",
+          "image": "yellow.png",
+          "expected_color": "yellow",
+          "expected_keywords": [
+            "黄色",
+            "黄",
+            "yellow"
+          ],
+          "answer": "",
+          "hit": false,
+          "error": null
+        },
+        {
+          "case_id": "mm-high-3",
+          "complexity": "中",
+          "image": "red.png",
+          "expected_color": "red",
+          "expected_keywords": [
+            "红色",
+            "红",
+            "red"
+          ],
+          "answer": "",
+          "hit": false,
+          "error": null
+        },
+        {
+          "case_id": "mm-low-4",
+          "complexity": "低",
+          "image": "green.png",
+          "expected_color": "green",
+          "expected_keywords": [
+            "绿色",
+            "绿",
+            "green"
+          ],
+          "answer": "绿色",
+          "hit": true,
+          "error": null
+        },
+        {
+          "case_id": "mm-low-5",
+          "complexity": "低",
+          "image": "blue.png",
+          "expected_color": "blue",
+          "expected_keywords": [
+            "蓝色",
+            "蓝",
+            "blue"
+          ],
+          "answer": "蓝色",
+          "hit": true,
+          "error": null
+        },
+        {
+          "case_id": "mm-mid-4",
+          "complexity": "中",
+          "image": "yellow.png",
+          "expected_color": "yellow",
+          "expected_keywords": [
+            "黄色",
+            "黄",
+            "yellow"
+          ],
+          "answer": "",
+          "hit": false,
+          "error": null
+        },
+        {
+          "case_id": "mm-mid-5",
+          "complexity": "中",
+          "image": "red.png",
+          "expected_color": "red",
+          "expected_keywords": [
+            "红色",
+            "红",
+            "red"
+          ],
+          "answer": "",
+          "hit": false,
+          "error": null
+        },
+        {
+          "case_id": "mm-high-4",
+          "complexity": "高",
+          "image": "green.png",
+          "expected_color": "green",
+          "expected_keywords": [
+            "绿色",
+            "绿",
+            "green"
+          ],
+          "answer": "",
+          "hit": false,
+          "error": null
+        },
+        {
+          "case_id": "mm-high-5",
+          "complexity": "高",
+          "image": "blue.png",
+          "expected_color": "blue",
+          "expected_keywords": [
+            "蓝色",
+            "蓝",
+            "blue"
+          ],
+          "answer": "蓝色",
+          "hit": true,
+          "error": null
+        }
+      ]
+    }
+  ]
+}
