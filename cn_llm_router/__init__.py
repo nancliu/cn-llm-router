@@ -12,6 +12,7 @@ from __future__ import annotations
 
 from .config import RouterConfig, load_config
 from .data_loader import RouterData, load_data
+from .orchestrator import OrchestrationResult, SubTaskRoute, SubTaskSpec, orchestrate
 from .types import (
     Classification,
     ModelChoice,
@@ -25,6 +26,10 @@ __all__ = [
     "classify",
     "select",
     "route",
+    "orchestrate",
+    "SubTaskSpec",
+    "SubTaskRoute",
+    "OrchestrationResult",
     "load_config",
     "load_data",
     "RouterConfig",
