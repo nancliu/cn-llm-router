@@ -95,6 +95,9 @@ class RouterConfig:
     availability_filter: bool = True
     max_failover: int = 1
     weights_override: Optional[dict] = None  # {category: {dimension: weight}} 或 None
+    # 社区分融合权重（ADR-0009）：blended = α×superclue + β×normalized_community；无社区分模型 β=0
+    community_alpha: float = 0.7
+    community_beta: float = 0.3
 
 
 def _read_yaml(path: Path) -> dict:
@@ -168,6 +171,10 @@ def load_config(config_dir: Optional[str] = None) -> RouterConfig:
             cfg.availability_filter = bool(srow["availability_filter"])
         if "max_failover" in srow:
             cfg.max_failover = int(srow["max_failover"])
+        if "community_alpha" in srow:
+            cfg.community_alpha = float(srow["community_alpha"])
+        if "community_beta" in srow:
+            cfg.community_beta = float(srow["community_beta"])
 
     # weights 覆盖（ADR 词汇表：策略档位；v1 中作为口径覆盖入口，见 data_loader 说明）
     wfile = cdir / "weights.yaml"

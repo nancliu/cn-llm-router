@@ -62,6 +62,15 @@ def select(
     if n_missing:
         notice.append(f"该格 {n_missing} 个模型无公开评分，未参与排序")
 
+    # 社区分叠加提示（ADR-0009）：有社区分数据集时，无社区分的候选模型回退纯 SuperCLUE
+    if data.community_scores and cfg.community_beta > 0:
+        ranked = [m for m in data.models if (category, complexity, m) in data.scores]
+        no_comm = [m for m in ranked if m not in data.community_scores]
+        if no_comm:
+            notice.append(
+                f"{len(no_comm)} 个模型无社区评分，使用纯 SuperCLUE 分（未叠加 LMArena 信号）"
+            )
+
     return Recommendation(
         strategy=strategy,
         availability_filtered=filter_on,
@@ -86,12 +95,19 @@ def _rank(
             if strategy != "纯能力优先":
                 continue
             cost = float("inf")
-        candidates.append((logical, spec.vendor, score, cost))
+        # 社区分叠加（ADR-0009）：有社区分且 β>0 时 blended = α×superclue + β×community；
+        # 无社区分或 β=0 时保持纯 SuperCLUE（comm=None 供 reason 标注）。
+        comm = data.community_scores.get(logical)
+        if comm is not None and cfg.community_beta > 0:
+            score = cfg.community_alpha * score + cfg.community_beta * comm
+        else:
+            comm = None
+        candidates.append((logical, spec.vendor, score, cost, comm))
 
     full = _sort(candidates, strategy, complexity)
     avail = [c for c in full if _available(c[0], cfg)] if filter_on else full
-    return [_to_choice(c, i + 1, strategy) for i, c in enumerate(avail)], [
-        _to_choice(c, i + 1, strategy) for i, c in enumerate(full)
+    return [_to_choice(c, i + 1, strategy, cfg) for i, c in enumerate(avail)], [
+        _to_choice(c, i + 1, strategy, cfg) for i, c in enumerate(full)
     ]
 
 
@@ -131,11 +147,13 @@ def _pick_backup(eligible: list[ModelChoice], primary: ModelChoice, data: Router
     return None
 
 
-def _to_choice(item: tuple[str, str, float, float], rank: int, strategy: str) -> ModelChoice:
-    logical, vendor, score, cost = item
+def _to_choice(item: tuple[str, str, float, float, float | None], rank: int, strategy: str, cfg: RouterConfig) -> ModelChoice:
+    logical, vendor, score, cost, comm = item
     reason = {
         "纯能力优先": f"能力分最高（{score:.1f}）",
         "性价比优先": f"性价比最优（能力分 {score:.1f} / 成本指数）",
         "平衡": "平衡档推荐（兼顾能力与成本）",
     }[strategy]
+    if comm is not None:
+        reason += f"；含社区分叠加(α={cfg.community_alpha:.1f},β={cfg.community_beta:.1f})"
     return ModelChoice(logical_name=logical, vendor=vendor, score=score, cost=cost, rank=rank, reason=reason)

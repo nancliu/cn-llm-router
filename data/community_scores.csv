@@ -1,0 +1,10 @@
+model,source,metric,value,source_url,as_of
+Kimi-K3,lmarena,elo_overall,1485,https://lmarena-ai-chatbot-arena.static.hf.space/index.html,2026-09-13
+GLM-5.3,lmarena,elo_overall,1483,https://lmarena-ai-chatbot-arena.static.hf.space/index.html,2026-09-13
+Qwen3.8-Max-0902,lmarena,elo_overall,1481,https://lmarena-ai-chatbot-arena.static.hf.space/index.html,2026-09-13
+GLM-5.3-Flash,lmarena,elo_overall,1475,https://lmarena-ai-chatbot-arena.static.hf.space/index.html,2026-09-13
+GLM-5.2,lmarena,elo_overall,1472,https://lmarena-ai-chatbot-arena.static.hf.space/index.html,2026-09-13
+DeepSeek-V4-Pro-0813,lmarena,elo_overall,1463,https://lmarena-ai-chatbot-arena.static.hf.space/index.html,2026-09-13
+MiniMax-M3,lmarena,elo_overall,1441,https://lmarena-ai-chatbot-arena.static.hf.space/index.html,2026-09-13
+DeepSeek-V4-Flash-0731,lmarena,elo_overall,1436,https://lmarena-ai-chatbot-arena.static.hf.space/index.html,2026-09-13
+腾讯混元Hy3,lmarena,elo_overall,1413,https://lmarena-ai-chatbot-arena.static.hf.space/index.html,2026-09-13

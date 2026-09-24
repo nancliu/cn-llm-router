@@ -14,6 +14,10 @@ import yaml
 
 COMPLEXITIES = ("低", "中", "高")
 
+# LMArena Elo 归一化区间（ADR-0009）：1300→0，1550→100，clamp 到 [0,100]
+ELO_MIN = 1300.0
+ELO_MAX = 1550.0
+
 
 @dataclass
 class ModelSpec:
@@ -55,6 +59,10 @@ class RouterData:
     weight_notes: dict[tuple[str, str], str] = field(default_factory=dict)
     categories: dict[str, CategoryDef] = field(default_factory=dict)    # category 名称 → CategoryDef
     version: str = ""
+    # 社区/人工评测叠加（ADR-0009，第二数据源）：
+    # community_scores: logical_name → 归一化后 0-100 分；community_raw: 原值+来源（可溯源留痕）
+    community_scores: dict[str, float] = field(default_factory=dict)
+    community_raw: dict[str, dict] = field(default_factory=dict)
 
 
 def _read_csv(path: Path) -> list[dict]:
@@ -115,6 +123,25 @@ def load_data(data_dir: Path, weights_override: dict | None = None) -> RouterDat
             id=c["id"], name=c["name"], description=c["description"], examples=list(c.get("examples", []))
         )
 
+    # community_scores（ADR-0009，第二数据源）：文件不存在则空 dict（向后兼容，不报错）
+    cpath = data_dir / "community_scores.csv"
+    if cpath.exists():
+        for r in _read_csv(cpath):
+            model = (r.get("model") or "").strip()
+            if not model:
+                continue
+            elo = float(r["value"])
+            # 归一化：Elo 线性映射到 0-100，clamp 到 [0,100]
+            norm = (elo - ELO_MIN) / (ELO_MAX - ELO_MIN) * 100.0
+            d.community_scores[model] = max(0.0, min(100.0, norm))
+            d.community_raw[model] = {
+                "source": r.get("source", ""),
+                "metric": r.get("metric", ""),
+                "value": elo,
+                "source_url": r.get("source_url", ""),
+                "as_of": r.get("as_of", ""),
+            }
+
     _validate(d)
     return d
 
@@ -140,6 +167,10 @@ def _validate(d: RouterData) -> None:
     # 模型在 scores 中的集合 ⊆ models 中的集合（Seedream 图像模型文本任务全 N/A，允许无有效分）
     score_models = {k[2] for k in d.scores}
     assert score_models <= set(d.models), "scores 中出现未注册模型"
+    # community_scores 中的模型 ⊆ models（ADR-0009：未注册模型即数据错配，拒绝启动）
+    assert set(d.community_scores) <= set(d.models), (
+        "community_scores 中出现未注册模型: " + str(sorted(set(d.community_scores) - set(d.models)))
+    )
     no_score = sorted(set(d.models) - score_models)
     if no_score:
         import logging
