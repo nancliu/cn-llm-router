@@ -7,13 +7,17 @@
     list-models                # 模型注册表
     list-categories            # 12 类定义
     list-strategies            # 三档策略说明
+    cache-status               # 查看分类缓存配置（ADR-0012）
+    cost-report                # 用量与成本月报（ADR-0011/0012）
 
-所有命令支持 --json 输出（stdout 仅一份 JSON）。
+classify / route 支持 --stats：临时开启本次使用统计记录（opt-in，默认关闭）。
+所有命令支持 --json 输出（stdout 仅一份 JSON；统计提示等诊断走 stderr）。
 """
 import argparse
 import dataclasses
 import json
 import sys
+from datetime import datetime
 
 from .config import load_config
 from .data_loader import load_data
@@ -37,9 +41,12 @@ def _model_summary(m):
 
 
 def cmd_classify(args, cfg, data):
-    from .classifier import Classifier
+    from . import classify as public_classify
 
-    clf = Classifier(data=data, cfg=cfg, debug=args.debug).classify(args.prompt)
+    stats_on = bool(getattr(args, "stats", False))
+    if stats_on:
+        cfg = dataclasses.replace(cfg, stats_enabled=True)
+    clf = public_classify(args.prompt, debug=args.debug, config=cfg)
     out = {
         "category": clf.category,
         "complexity": clf.complexity,
@@ -57,6 +64,8 @@ def cmd_classify(args, cfg, data):
         print(f"类别: {clf.category}  复杂度: {clf.complexity}  置信度: {clf.confidence:.2f}{tag}{reason}")
         if clf.second_guess:
             print(f"次选: {clf.second_guess}")
+    if stats_on:
+        print(f"统计已记录到 {cfg.stats_log_path}", file=sys.stderr)
 
 
 def cmd_select(args, cfg, data):
@@ -75,16 +84,23 @@ def cmd_select(args, cfg, data):
 
 
 def cmd_route(args, cfg, data):
-    from .classifier import Classifier
-    from .gateway import RouterClient
-    from .selector import select as _select
+    from . import route as public_route
 
-    clf = Classifier(data=data, cfg=cfg, debug=args.debug).classify(args.prompt)
-    rec = _select(data, clf.category, clf.complexity, strategy=args.strategy,
-                  availability_filter=False if args.no_availability_filter else None, cfg=cfg)
-    client = RouterClient(rec, cfg=cfg)
+    stats_on = bool(getattr(args, "stats", False))
+    if stats_on:
+        cfg = dataclasses.replace(cfg, stats_enabled=True)
+    rr = public_route(
+        args.prompt,
+        strategy=args.strategy,
+        debug=args.debug,
+        availability_filter=False if args.no_availability_filter else None,
+        config=cfg,
+    )
+    clf = rr.classification
+    rec = rr.recommendation
+    client = rr.client
     out = {
-        "request": args.prompt,
+        "request": rr.request,
         "classification": {
             "category": clf.category, "complexity": clf.complexity,
             "confidence": clf.confidence, "low_confidence": clf.low_confidence,
@@ -105,6 +121,8 @@ def cmd_route(args, cfg, data):
         for n in rec.notice:
             print(f"提示: {n}")
         print(f"客户端就绪: {type(client).__name__}（OpenAI 兼容，失败自动切备选）")
+    if stats_on:
+        print(f"统计已记录到 {cfg.stats_log_path}", file=sys.stderr)
 
 
 def _rec_to_dict(rec):
@@ -158,6 +176,52 @@ def cmd_list_strategies(args, cfg, data):
         print(f"{r['strategy']}: {r['rule']}")
 
 
+def cmd_cache_status(args, cfg, data):
+    """ADR-0012：打印分类缓存配置与实例生命周期提示。"""
+    out = {
+        "cache_enabled": cfg.cache_enabled,
+        "cache_ttl": cfg.cache_ttl,
+        "cache_max_size": cfg.cache_max_size,
+        "cache_path": cfg.cache_path,
+    }
+    if args.json:
+        _json_dump(out)
+        return
+    print(f"cache_enabled: {cfg.cache_enabled}")
+    print(f"cache_ttl（秒）: {cfg.cache_ttl}")
+    print(f"cache_max_size: {cfg.cache_max_size}")
+    print(f"cache_path: {cfg.cache_path}")
+    print()
+    print("提示：公共 classify() 每次新建 Classifier 实例，缓存按实例生命周期生效；"
+          "长驻进程复用 Classifier 可获缓存命中收益")
+
+
+def cmd_cost_report(args, cfg, data):
+    """ADR-0012：复用 scripts/cost_report.py 的汇总逻辑，不重复实现。"""
+    import os
+
+    scripts_dir = os.path.join(
+        os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "scripts"
+    )
+    if scripts_dir not in sys.path:
+        sys.path.insert(0, scripts_dir)
+    import cost_report  # noqa: E402 —— scripts/ 不在包路径
+
+    log_path = args.log or cfg.stats_log_path
+    events = cost_report.load_events(log_path)
+    if not events:
+        print(f"未找到日志文件或为空：{log_path}")
+        print("（开启统计：config/selector.yaml 设 stats_enabled=true，或本次调用加 --stats，见 ADR-0011/0012）")
+        return
+    month = args.month or datetime.now().strftime("%Y-%m")
+    selected = cost_report.filter_month(events, month)
+    summary = cost_report.summarize(selected)
+    if args.json:
+        _json_dump({"month": month, **summary})
+    else:
+        cost_report.print_report(summary, month)
+
+
 def main(argv=None):
     ap = argparse.ArgumentParser(prog="cn-llm-router", description="国内大模型选择器/路由器")
     ap.add_argument("--json", action="store_true", help="JSON 输出")
@@ -172,6 +236,7 @@ def main(argv=None):
 
     p = sub.add_parser("classify", parents=[parent], help="任务分类")
     p.add_argument("prompt")
+    p.add_argument("--stats", action="store_true", help="本次调用记录使用统计（写入 stats_log_path）")
 
     p = sub.add_parser("select", parents=[parent], help="模型推荐")
     p.add_argument("--category", required=True, help="12 类之一（cn-llm-router list-categories 查看）")
@@ -183,10 +248,16 @@ def main(argv=None):
     p.add_argument("prompt")
     p.add_argument("--strategy", default="平衡", choices=["纯能力优先", "平衡", "性价比优先"])
     p.add_argument("--no-availability-filter", action="store_true")
+    p.add_argument("--stats", action="store_true", help="本次调用记录使用统计（写入 stats_log_path）")
 
     sub.add_parser("list-models", parents=[parent], help="模型注册表")
     sub.add_parser("list-categories", parents=[parent], help="12 类定义")
     sub.add_parser("list-strategies", parents=[parent], help="三档策略说明")
+    sub.add_parser("cache-status", parents=[parent], help="查看分类缓存配置（ADR-0012）")
+
+    p = sub.add_parser("cost-report", parents=[parent], help="用量与成本月报（ADR-0011/0012）")
+    p.add_argument("--log", default=None, help="JSONL 日志路径（缺省 stats_log_path）")
+    p.add_argument("--month", default=None, help="月份 YYYY-MM（缺省当月）")
 
     args = ap.parse_args(argv)
     cfg = load_config(args.config_dir)
@@ -196,6 +267,7 @@ def main(argv=None):
         "classify": cmd_classify, "select": cmd_select, "route": cmd_route,
         "list-models": cmd_list_models, "list-categories": cmd_list_categories,
         "list-strategies": cmd_list_strategies,
+        "cache-status": cmd_cache_status, "cost-report": cmd_cost_report,
     }
     try:
         handlers[args.cmd](args, cfg, data)
