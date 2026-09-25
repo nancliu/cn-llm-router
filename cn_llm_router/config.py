@@ -98,6 +98,14 @@ class RouterConfig:
     # 社区分融合权重（ADR-0009）：blended = α×superclue + β×normalized_community；无社区分模型 β=0
     community_alpha: float = 0.7
     community_beta: float = 0.3
+    # 分类缓存（ADR-0010）：同请求 classify 结果缓存，命中省 LLM 调用
+    cache_enabled: bool = True
+    cache_ttl: int = 3600          # 秒，默认 1 小时
+    cache_max_size: int = 1000     # 内存条目上限
+    cache_path: Optional[str] = None  # 持久化路径（JSON），None=仅内存
+    # 使用统计（ADR-0011）：记录 route/classify 的模型/类别/耗时/估算成本，JSONL 日志
+    stats_enabled: bool = False    # 默认关闭，避免无意写日志
+    stats_log_path: str = "reports/usage.jsonl"
 
 
 def _read_yaml(path: Path) -> dict:
@@ -175,6 +183,20 @@ def load_config(config_dir: Optional[str] = None) -> RouterConfig:
             cfg.community_alpha = float(srow["community_alpha"])
         if "community_beta" in srow:
             cfg.community_beta = float(srow["community_beta"])
+        # 分类缓存（ADR-0010）
+        if "cache_enabled" in srow:
+            cfg.cache_enabled = bool(srow["cache_enabled"])
+        if "cache_ttl" in srow:
+            cfg.cache_ttl = int(srow["cache_ttl"])
+        if "cache_max_size" in srow:
+            cfg.cache_max_size = int(srow["cache_max_size"])
+        if "cache_path" in srow and srow["cache_path"]:
+            cfg.cache_path = str(srow["cache_path"])
+        # 使用统计（ADR-0011）
+        if "stats_enabled" in srow:
+            cfg.stats_enabled = bool(srow["stats_enabled"])
+        if "stats_log_path" in srow:
+            cfg.stats_log_path = str(srow["stats_log_path"])
 
     # weights 覆盖（ADR 词汇表：策略档位；v1 中作为口径覆盖入口，见 data_loader 说明）
     wfile = cdir / "weights.yaml"
