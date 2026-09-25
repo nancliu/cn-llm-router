@@ -90,7 +90,7 @@ class RouterConfig:
     data_dir: Path = DEFAULT_DATA_DIR
     config_dir: Path = DEFAULT_CONFIG_DIR
     providers: dict[str, ProviderSpec] = field(default_factory=dict)
-    classifier_models: list[str] = field(default_factory=lambda: ["GLM-5.3-Flash", "DeepSeek-V4-Flash-0731"])
+    classifier_models: list[str] = field(default_factory=lambda: ["Qwen3.8-Max-0902", "DeepSeek-V4.1-Flash-CED", "豆包Seed-2.1-Pro"])
     classifier_timeout: float = 30.0
     availability_filter: bool = True
     max_failover: int = 1

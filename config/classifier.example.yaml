@@ -1,7 +1,12 @@
 # 分类器配置样例（docs/spec/router-v1.md §4，ADR-0002）
-# 复制为 config/classifier.yaml 后按需修改；默认内置：GLM-5.3-Flash → DeepSeek-V4-Flash-0731
+# 复制为 config/classifier.yaml 后按需修改；默认内置：Qwen3.8-Max-0902 → DeepSeek-V4.1-Flash-CED → 豆包Seed-2.1-Pro
+# 评测结论 2026-09-24（180 golden cases，火山 coding-plan / 百炼 token-plan 实测）：
+#   Qwen3.8-Max-0902 端到端 99.4% 最优（179/180，耗时最长）
+#   DeepSeek-V4.1-Flash-CED 98.9% 且快约 6 倍（316s vs 1922s）→ 成本/速度敏感时优先
+#   豆包Seed-2.1-Pro 98.9%（0 错判，复杂度命中 79.6%）
 classifier:
   models:
-    - GLM-5.3-Flash
-    - DeepSeek-V4-Flash-0731
+    - Qwen3.8-Max-0902
+    - DeepSeek-V4.1-Flash-CED
+    - 豆包Seed-2.1-Pro
   timeout: 30

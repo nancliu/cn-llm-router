@@ -5,9 +5,10 @@
 ## 状态
 
 - ✅ 打分表 v1-20260923（12 任务类别 × 3 复杂度 × 15 模型，含三档性价比策略：纯能力优先 / 平衡 / 性价比优先）
-- ✅ 路由层 v1（任务分类器 + 模型选择器 + OpenAI 兼容薄网关），73 个测试通过（Python 3.10/3.11/3.12，GitHub Actions CI）
-- ✅ 工具链：飞书打分表同步、分类在线评测（108 golden cases）、CLI、PyPI 打包（wheel 已验证）、LiteLLM backend
-- ✅ 在线评测（2026-09-23，火山 coding-plan / 百炼 token-plan 实测）：DeepSeek-V4.1-Flash-CED 端到端 99.1% 为最优默认分类模型（报告见 `reports/eval-cn-plan-20260923.json`）
+- ✅ 路由层 v1（任务分类器 + 模型选择器 + OpenAI 兼容薄网关），101 个测试通过（Python 3.10/3.11/3.12，GitHub Actions CI）
+- ✅ Sub-Agent 多模型编排（ADR-0007）：一个任务拆多个子任务，每个独立判类选模型分配不同大模型
+- ✅ 工具链：飞书打分表同步、分类在线评测（180 golden cases）、多模态实测、模型版本跟踪（ADR-0008）、社区评测叠加（ADR-0009）、CLI、PyPI 打包（wheel 已验证）、LiteLLM backend
+- ✅ 在线评测（2026-09-24，火山 coding-plan / 百炼 token-plan 实测，180 golden cases）：Qwen3.8-Max-0902 端到端 99.4% 为默认分类模型；DeepSeek-V4.1-Flash-CED 98.9% 且快约 6 倍（报告见 `reports/eval-20260924.json`）
 
 ## 快速使用
 
@@ -52,7 +53,7 @@ cn-llm-router list-models / list-categories / list-strategies                   
 | 脚本 | 用途 |
 |---|---|
 | `scripts/sync_from_lark.py --url <打分表URL>` | 飞书打分表 → `data/*.csv` 同步（幂等：内容一致不重写；需 `lark-cli`；URL 也可放环境变量 `CN_LLM_ROUTER_SHEET_URL`） |
-| `scripts/eval_classifier.py [--models A,B] [--dry-run]` | LLM 判类在线评测：108 golden cases（12 类 × 3 复杂度 × 3 题），输出端到端/LLM 直判准确率、按类别矩阵、混淆矩阵，推荐默认分类模型。需至少一个分类模型的 API key |
+| `scripts/eval_classifier.py [--models A,B] [--dry-run]` | LLM 判类在线评测：180 golden cases（12 类 × 3 复杂度 × 5 题），输出端到端/LLM 直判准确率、按类别矩阵、混淆矩阵，推荐默认分类模型。需至少一个分类模型的 API key |
 | `scripts/export_data.py <快照.json>` | 一次性导出（sync 脚本内部复用） |
 
 ## 网关 backend

@@ -13,7 +13,8 @@ def _clf(data, cfg, llm_json, debug=False):
 # ---- LLM 判类（mock；需注入 key 才会走到 LLM 候选链） ----
 
 def _with_key(monkeypatch):
-    monkeypatch.setenv("ZHIPU_API_KEY", "test-key")
+    # 默认分类候选链第一候选 Qwen3.8-Max-0902（key_env=DASHSCOPE_API_KEY）
+    monkeypatch.setenv("DASHSCOPE_API_KEY", "test-key")
 
 
 def test_llm_valid_json(data, cfg, monkeypatch):
