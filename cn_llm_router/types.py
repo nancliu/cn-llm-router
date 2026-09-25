@@ -21,6 +21,7 @@ class Classification:
     low_confidence: bool = False
     fallback_reason: Optional[str] = None
     raw: Optional[dict] = None  # 仅 debug 模式输出
+    cached: bool = False  # 仅命中缓存时为 True（ADR-0010），不参与业务语义
 
     def to_dict(self, debug: bool = False) -> dict:
         d = {

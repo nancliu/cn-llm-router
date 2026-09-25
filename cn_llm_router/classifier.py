@@ -5,10 +5,12 @@ LLM 结构化判类 → 规则关键词兜底 → 默认值兜底；三层均不
 """
 from __future__ import annotations
 
+import dataclasses
 import json
 import logging
 from typing import Callable, Optional
 
+from .cache import ClassifyCache, make_cache_key
 from .config import RouterConfig, key_available
 from .data_loader import RouterData
 from .types import COMPLEXITIES, DEFAULT_CATEGORY, DEFAULT_COMPLEXITY, Classification
@@ -41,28 +43,56 @@ class Classifier:
         cfg: RouterConfig,
         debug: bool = False,
         llm_json: Optional[Callable[[str, str], dict]] = None,
+        cache: Optional[ClassifyCache] = None,
     ):
         self.data = data
         self.cfg = cfg
         self.debug = debug
         # llm_json(prompt, model) -> dict；测试可注入 mock，默认走 openai 网关
         self._llm_json = llm_json or self._default_llm_json
+        # 分类缓存（ADR-0010）：显式注入优先；未注入且开关开启时按配置自建
+        if cache is not None:
+            self.cache: Optional[ClassifyCache] = cache
+        elif cfg.cache_enabled:
+            self.cache = ClassifyCache(
+                ttl=cfg.cache_ttl, max_size=cfg.cache_max_size, path=cfg.cache_path
+            )
+        else:
+            self.cache = None
+        # 本次 classify 实际命中的判类模型（统计用，ADR-0011）；规则/默认兜底/缓存命中为 None
+        self.last_model: Optional[str] = None
 
     # ---------- 主入口 ----------
     def classify(self, prompt: str) -> Classification:
-        if not prompt or not str(prompt).strip():
-            return self._default_fallback("输入为空")
-        text = str(prompt).strip()
+        text = str(prompt)
 
-        llm_res = self._try_llm(text)
-        if llm_res is not None:
-            return llm_res
+        # 查缓存（ADR-0010）：键 = 规范化 prompt + 分类模型链 + 数据版本
+        key: Optional[str] = None
+        if self.cache is not None:
+            key = make_cache_key(text, self.cfg.classifier_models, self.data.version)
+            cached = self.cache.get(key)
+            if cached is not None:
+                res = Classification(**cached)
+                res.cached = True
+                return res
 
-        rule_res = self._rule_fallback(text)
-        if rule_res is not None:
-            return rule_res
+        if not text.strip():
+            res = self._default_fallback("输入为空")
+        else:
+            t = text.strip()
+            llm_res = self._try_llm(t)
+            if llm_res is not None:
+                res = llm_res
+            else:
+                rule_res = self._rule_fallback(t)
+                res = rule_res if rule_res is not None else self._default_fallback(
+                    "LLM 与规则兜底均未命中"
+                )
 
-        return self._default_fallback("LLM 与规则兜底均未命中")
+        # 写缓存：LLM 判类 / 规则兜底 / 默认兜底统一缓存（cached 标记不入库）
+        if self.cache is not None and key is not None:
+            self.cache.set(key, dataclasses.asdict(res))
+        return res
 
     # ---------- LLM 判类 ----------
     def _try_llm(self, text: str) -> Optional[Classification]:
@@ -72,7 +102,10 @@ class Classifier:
                 continue
             try:
                 raw = self._llm_json(self._build_prompt(text), model)
-                return self._parse(raw, model)
+                res = self._parse(raw, model)
+                if res is not None:
+                    self.last_model = model
+                return res
             except Exception as e:  # noqa: BLE001 —— 任何失败都进入降级链
                 logger.debug("分类 LLM %s 失败: %s", model, e)
         return None

@@ -7,9 +7,11 @@ from __future__ import annotations
 
 import logging
 import os
+import time
 from typing import Optional
 
 from .config import ProviderSpec, RouterConfig
+from .stats import UsageRecorder, prompt_hash
 from .types import Recommendation, RouteError
 
 logger = logging.getLogger("cn_llm_router.gateway")
@@ -128,16 +130,21 @@ class RouterClient:
         for choice in chain:
             self.attempted.append(choice.logical_name)
             client = self._client_for(choice.logical_name)
+            t0 = time.monotonic()
             try:
                 fn = client
                 for part in method.split("."):
                     fn = getattr(fn, part)
-                return fn(*args, **kwargs)
+                resp = fn(*args, **kwargs)
             except Exception as e:  # noqa: BLE001 —— 按类型判定是否可切
                 last_err = e
                 if not self._is_retryable(e) or choice is chain[-1]:
                     break
                 logger.info("模型 %s 调用失败，切备选: %s", choice.logical_name, e)
+                continue
+            duration_ms = (time.monotonic() - t0) * 1000
+            self._record_completion(choice.logical_name, resp, kwargs, duration_ms)
+            return resp
         raise RouteError(
             "上游模型调用最终失败",
             cause=f"{type(last_err).__name__}: {last_err}" if last_err else "unknown",
@@ -149,6 +156,54 @@ class RouterClient:
         if prov is None:
             raise RouteError(f"模型 {logical} 未配置 provider（config/providers.yaml）", cause="no_provider", attempted=[logical])
         return build_client(prov)
+
+    def _record_completion(self, model_name: str, resp: object, kwargs: dict, duration_ms: float) -> None:
+        """成功调用后记录真实用量（ADR-0011 completion 事件）；关闭或无 usage 时空操作。"""
+        if not getattr(self.cfg, "stats_enabled", False):
+            return
+        usage = getattr(resp, "usage", None)
+        if usage is None:
+            return
+        prompt_tokens = getattr(usage, "prompt_tokens", None)
+        completion_tokens = getattr(usage, "completion_tokens", None)
+        if prompt_tokens is None and completion_tokens is None:
+            return
+        # 惰性加载一次模型单价（仅开启统计时付出成本）
+        prices: tuple[Optional[float], Optional[float]] = (None, None)
+        try:
+            if not hasattr(self, "_stats_models"):
+                from .data_loader import load_data
+
+                self._stats_models = load_data(self.cfg.data_dir).models  # type: ignore[attr-defined]
+            spec = self._stats_models.get(model_name)  # type: ignore[attr-defined]
+            if spec is not None:
+                prices = (spec.price_in, spec.price_out)
+        except Exception as e:  # noqa: BLE001 —— 统计旁路失败不影响调用
+            logger.debug("completion 统计取价失败（忽略）: %s", e)
+        # 从 messages 取最后一条用户文本做 hash（不记录内容）
+        last_user = ""
+        for m in reversed(kwargs.get("messages") or []):
+            if m.get("role") == "user" and isinstance(m.get("content"), str):
+                last_user = m["content"]
+                break
+        UsageRecorder(enabled=True, log_path=self.cfg.stats_log_path).record({
+            "event_type": "completion",
+            "prompt_hash": prompt_hash(last_user) if last_user else "",
+            "prompt_chars": len(last_user),
+            "category": "",  # completion 事件不回填类别，留空
+            "complexity": "",
+            "strategy": self.recommendation.strategy,
+            "classifier_model": "",
+            "primary_model": model_name,
+            "backup_model": "",
+            "duration_ms": round(duration_ms, 2),
+            "estimated_input_tokens": prompt_tokens or 0,
+            "estimated_output_tokens": completion_tokens or 0,
+            "estimated_cost_yuan": UsageRecorder.estimate_cost(
+                prompt_tokens or 0, completion_tokens or 0, prices[0], prices[1]
+            ),
+            "cache_hit": False,
+        })
 
     @staticmethod
     def _is_retryable(e: Exception) -> bool:
