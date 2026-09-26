@@ -6,6 +6,12 @@ name: Release
 #      环境名写 "release"（workflow 名），工作流文件路径写 ".github/workflows/release.yml"
 #   2. 推送 tag: git tag v0.1.0 && git push origin v0.1.0
 # 未配置前，build 与 artifact 照常执行，publish 步骤会被跳过（不会失败）。
+#
+# 两级评测门禁（ADR-0013）：
+#   - PR/主干 ci.yml 跑 pytest 离线门禁；
+#   - 本文件在 build 之后、publish 之前跑 eval-regression：配置了 DASHSCOPE_API_KEY /
+#     VOLCENGINE_API_KEY secrets 时全量 180 题评测并对比基线阈值，失败即阻断 publish；
+#     未配置 secrets 时打印提示并跳过，不阻断。
 
 on:
   push:
@@ -36,8 +42,38 @@ jobs:
           name: dist
           path: dist/
 
-  publish:
+  eval-regression:
     needs: build
+    runs-on: ubuntu-latest
+    # 纯离线也可完成本 job 的"跳过"分支；在线评测只在 secrets 存在时发生（step 内 shell 判断）
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Install
+        run: pip install -e .
+      - name: Eval baseline regression (ADR-0013)
+        env:
+          DASHSCOPE_API_KEY: ${{ secrets.DASHSCOPE_API_KEY }}
+          VOLCENGINE_API_KEY: ${{ secrets.VOLCENGINE_API_KEY }}
+        run: |
+          if [ -z "$DASHSCOPE_API_KEY" ] && [ -z "$VOLCENGINE_API_KEY" ]; then
+            echo "未配置 API key secrets，跳过全量评测回归（仅跑 pytest 离线门禁）"
+            exit 0
+          fi
+          echo "检测到 API key secrets，运行全量 180 题评测并对比基线..."
+          python scripts/eval_classifier.py --check-baseline --output reports/eval-ci.json
+      - name: Upload eval report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: eval-ci-report
+          path: reports/eval-ci.json
+          if-no-files-found: ignore
+
+  publish:
+    needs: [build, eval-regression]
     runs-on: ubuntu-latest
     if: startsWith(github.ref, 'refs/tags/v')
     steps:

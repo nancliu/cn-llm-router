@@ -13,6 +13,7 @@
         [--cases tests/fixtures/golden_cases.yaml] \
         [--output reports/eval-<ts>.json] \
         [--dry-run]          # 不调用任何 LLM：只校验 key 状态与数据结构
+        [--check-baseline]   # Release 门禁（ADR-0013）：对比基线阈值，低于则 exit 1
 
 前置：至少一个候选模型已配置 API key（providers.example.yaml 的 key_env 对应环境变量）。
 """
@@ -71,6 +72,55 @@ def run_model(cfg, data, model: str, cases: list[dict]) -> dict:
         })
     elapsed = time.time() - t0
     return summarize(model, rows, elapsed)
+
+
+# 评测门禁基线（ADR-0013）。数字必须可溯源：
+# 来源 reports/eval-20260924.json，2026-09-24 全量 180 题人工评测；
+# 发布前重跑评测后回写本常量，禁止凭空编造。
+EVAL_BASELINE = {
+    "Qwen3.8-Max-0902": 0.994,
+    "DeepSeek-V4.1-Flash-CED": 0.989,
+    "豆包Seed-2.1-Pro": 0.989,
+}
+EVAL_THRESHOLD = 0.97  # 端到端准确率绝对下限，低于此值拦截发布
+
+
+def check_baseline(
+    results: list[dict],
+    available: set[str],
+    baseline: dict[str, float] = EVAL_BASELINE,
+    threshold: float = EVAL_THRESHOLD,
+) -> tuple[bool, list[str]]:
+    """对比已跑模型的端到端准确率与门禁阈值（纯函数，可单测）。
+
+    results: run_model/summarize 的输出列表（含 end_to_end_accuracy）。
+    available: 本次已配置 API key、实际参与评测的模型名集合。
+    返回 (ok, messages)：ok=False 时调用方应 sys.exit(1)。
+    """
+    by_model = {r["model"]: r for r in results}
+    messages: list[str] = []
+    ok = True
+    for model, base in baseline.items():
+        if model not in available:
+            messages.append(f"未配置 key，跳过：{model}（基线 {base:.1%}）")
+            continue
+        res = by_model.get(model)
+        if res is None:
+            messages.append(f"{model}：已配 key 但未产出评测结果，按失败处理")
+            ok = False
+            continue
+        acc = res["end_to_end_accuracy"]
+        if acc < threshold:
+            ok = False
+            messages.append(
+                f"{model}：端到端准确率 {acc:.1%} 低于门禁阈值 {threshold:.0%}"
+                f"（基线 {base:.1%}）——拦截发布"
+            )
+        else:
+            messages.append(
+                f"{model}：端到端准确率 {acc:.1%}（基线 {base:.1%}，阈值 {threshold:.0%}）通过"
+            )
+    return ok, messages
 
 
 def summarize(model: str, rows: list[dict], elapsed: float) -> dict:
@@ -140,6 +190,8 @@ def main():
                                                     "tests", "fixtures", "golden_cases.yaml"))
     ap.add_argument("--output", default=None, help="JSON 报告落盘路径（缺省不落盘）")
     ap.add_argument("--dry-run", action="store_true", help="不调用 LLM：校验 key 状态与数据结构")
+    ap.add_argument("--check-baseline", action="store_true",
+                    help="Release 门禁：对比 EVAL_BASELINE 阈值，低于 EVAL_THRESHOLD 则 exit 1")
     args = ap.parse_args()
 
     cfg = load_config()
@@ -175,6 +227,16 @@ def main():
         with open(args.output, "w", encoding="utf-8") as f:
             json.dump(results, f, ensure_ascii=False, indent=2)
         print(f"JSON 报告 -> {args.output}")
+
+    if args.check_baseline:
+        ok, messages = check_baseline(results, set(ready))
+        print("\n== 基线门禁检查（ADR-0013） ==")
+        for m in messages:
+            print("  " + m)
+        if not ok:
+            print("门禁未通过，exit 1。")
+            sys.exit(1)
+        print("门禁通过。")
 
 
 if __name__ == "__main__":
