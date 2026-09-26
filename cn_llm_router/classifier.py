@@ -55,7 +55,8 @@ class Classifier:
             self.cache: Optional[ClassifyCache] = cache
         elif cfg.cache_enabled:
             self.cache = ClassifyCache(
-                ttl=cfg.cache_ttl, max_size=cfg.cache_max_size, path=cfg.cache_path
+                ttl=cfg.cache_ttl, max_size=cfg.cache_max_size,
+                path=cfg.cache_path, auto_save=bool(cfg.cache_path)
             )
         else:
             self.cache = None
