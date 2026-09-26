@@ -9,6 +9,7 @@
     list-strategies            # 三档策略说明
     cache-status               # 查看分类缓存配置（ADR-0012）
     cost-report                # 用量与成本月报（ADR-0011/0012）
+    web                        # 启动本地面板（ADR-0017，仅监听 127.0.0.1）
 
 classify / route 支持 --stats：临时开启本次使用统计记录（opt-in，默认关闭）。
 所有命令支持 --json 输出（stdout 仅一份 JSON；统计提示等诊断走 stderr）。
@@ -199,7 +200,6 @@ def cmd_cache_status(args, cfg, data):
 def cmd_cost_report(args, cfg, data):
     """ADR-0012：复用 scripts/cost_report.py 的汇总逻辑，不重复实现。"""
     import os
-
     scripts_dir = os.path.join(
         os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "scripts"
     )
@@ -220,6 +220,13 @@ def cmd_cost_report(args, cfg, data):
         _json_dump({"month": month, **summary})
     else:
         cost_report.print_report(summary, month)
+
+
+def cmd_web(args, cfg, data):
+    """ADR-0017：启动本地 Web 面板（标准库 http.server，仅监听 127.0.0.1）。"""
+    from .web import run_server
+
+    run_server(host=args.host, port=args.port, config=cfg)
 
 
 def main(argv=None):
@@ -259,6 +266,10 @@ def main(argv=None):
     p.add_argument("--log", default=None, help="JSONL 日志路径（缺省 stats_log_path）")
     p.add_argument("--month", default=None, help="月份 YYYY-MM（缺省当月）")
 
+    p = sub.add_parser("web", parents=[parent], help="启动本地面板（ADR-0017，仅监听 127.0.0.1）")
+    p.add_argument("--host", default="127.0.0.1", help="监听地址（默认 127.0.0.1，不建议改绑公网）")
+    p.add_argument("--port", type=int, default=8765, help="监听端口（默认 8765）")
+
     args = ap.parse_args(argv)
     cfg = load_config(args.config_dir)
     data = load_data(cfg.data_dir)
@@ -268,6 +279,7 @@ def main(argv=None):
         "list-models": cmd_list_models, "list-categories": cmd_list_categories,
         "list-strategies": cmd_list_strategies,
         "cache-status": cmd_cache_status, "cost-report": cmd_cost_report,
+        "web": cmd_web,
     }
     try:
         handlers[args.cmd](args, cfg, data)
