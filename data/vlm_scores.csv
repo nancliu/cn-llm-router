@@ -1,0 +1,7 @@
+﻿model,category,complexity,score,basis,num_questions,eval_date,source_url,as_of
+Qwen3.8-Max-0902,多模态理解,中,100.0,VLM真实实测; n=20; accuracy×100,20,2026-09-27,scripts/eval_multimodal.py (ADR-0015 实测; mm-eval-20260927.json; 2026-09-27),2026-09-27
+Qwen3.8-Max-0902,多模态理解,低,100.0,VLM真实实测; n=20; accuracy×100,20,2026-09-27,scripts/eval_multimodal.py (ADR-0015 实测; mm-eval-20260927.json; 2026-09-27),2026-09-27
+Qwen3.8-Max-0902,多模态理解,高,100.0,VLM真实实测; n=20; accuracy×100,20,2026-09-27,scripts/eval_multimodal.py (ADR-0015 实测; mm-eval-20260927.json; 2026-09-27),2026-09-27
+DeepSeek-V4.1-Flash-CED,多模态理解,中,42.9,VLM真实实测; n=20; accuracy×100,20,2026-09-27,scripts/eval_multimodal.py (ADR-0015 实测; mm-eval-20260927.json; 2026-09-27),2026-09-27
+DeepSeek-V4.1-Flash-CED,多模态理解,低,66.7,VLM真实实测; n=20; accuracy×100,20,2026-09-27,scripts/eval_multimodal.py (ADR-0015 实测; mm-eval-20260927.json; 2026-09-27),2026-09-27
+DeepSeek-V4.1-Flash-CED,多模态理解,高,85.7,VLM真实实测; n=20; accuracy×100,20,2026-09-27,scripts/eval_multimodal.py (ADR-0015 实测; mm-eval-20260927.json; 2026-09-27),2026-09-27

@@ -63,6 +63,9 @@ class RouterData:
     # community_scores: logical_name → 归一化后 0-100 分；community_raw: 原值+来源（可溯源留痕）
     community_scores: dict[str, float] = field(default_factory=dict)
     community_raw: dict[str, dict] = field(default_factory=dict)
+    # VLM 真实实测分（ADR-0015）：(category, complexity, model) → 0-100；
+    # 仅"多模态理解"类有；文件不存在则空 dict（向后兼容）
+    vlm_scores: dict[tuple[str, str, str], float] = field(default_factory=dict)
 
 
 def _read_csv(path: Path) -> list[dict]:
@@ -142,6 +145,15 @@ def load_data(data_dir: Path, weights_override: dict | None = None) -> RouterDat
                 "as_of": r.get("as_of", ""),
             }
 
+    # vlm_scores（ADR-0015，VLM 真实实测分）：文件不存在则空 dict（向后兼容）
+    vpath = data_dir / "vlm_scores.csv"
+    if vpath.exists():
+        for r in _read_csv(vpath):
+            model = (r.get("model") or "").strip()
+            if not model or r.get("score") in (None, ""):
+                continue
+            d.vlm_scores[(r["category"].strip(), r["complexity"].strip(), model)] = float(r["score"])
+
     _validate(d)
     return d
 
@@ -170,6 +182,11 @@ def _validate(d: RouterData) -> None:
     # community_scores 中的模型 ⊆ models（ADR-0009：未注册模型即数据错配，拒绝启动）
     assert set(d.community_scores) <= set(d.models), (
         "community_scores 中出现未注册模型: " + str(sorted(set(d.community_scores) - set(d.models)))
+    )
+    # vlm_scores 中的模型 ⊆ models（ADR-0015：同口径，未注册即数据错配）
+    vlm_models = {k[2] for k in d.vlm_scores}
+    assert vlm_models <= set(d.models), (
+        "vlm_scores 中出现未注册模型: " + str(sorted(vlm_models - set(d.models)))
     )
     no_score = sorted(set(d.models) - score_models)
     if no_score:

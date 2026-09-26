@@ -71,6 +71,17 @@ def select(
                 f"{len(no_comm)} 个模型无社区评分，使用纯 SuperCLUE 分（未叠加 LMArena 信号）"
             )
 
+    # VLM 实测分提示（ADR-0015）：多模态类有实测分数据集时，无实测分的模型回退文本代理分
+    if category == "多模态理解" and data.vlm_scores:
+        ranked = [m for m in data.models
+                  if (category, complexity, m) in data.scores
+                  or (category, complexity, m) in data.vlm_scores]
+        has_vlm = [m for m in ranked if (category, complexity, m) in data.vlm_scores]
+        if has_vlm and len(has_vlm) < len(ranked):
+            notice.append(
+                f"{len(ranked) - len(has_vlm)} 个模型无 VLM 实测分，使用文本代理分"
+            )
+
     return Recommendation(
         strategy=strategy,
         availability_filtered=filter_on,
@@ -87,6 +98,14 @@ def _rank(
     candidates = []
     for logical, spec in data.models.items():
         score = data.scores.get((category, complexity, logical))
+        # VLM 实测分（ADR-0015）：多模态类有实测分时替代文本代理分；
+        # 无代理分但有实测分的模型也因此获得排序资格。
+        vlm_used = False
+        if category == "多模态理解":
+            vlm = data.vlm_scores.get((category, complexity, logical))
+            if vlm is not None:
+                score = vlm
+                vlm_used = True
         if score is None:
             continue
         cost = spec.cost
@@ -97,12 +116,13 @@ def _rank(
             cost = float("inf")
         # 社区分叠加（ADR-0009）：有社区分且 β>0 时 blended = α×superclue + β×community；
         # 无社区分或 β=0 时保持纯 SuperCLUE（comm=None 供 reason 标注）。
-        comm = data.community_scores.get(logical)
+        # VLM 实测分不叠加社区分（直接测量，避免二次混入）。
+        comm = data.community_scores.get(logical) if not vlm_used else None
         if comm is not None and cfg.community_beta > 0:
             score = cfg.community_alpha * score + cfg.community_beta * comm
         else:
             comm = None
-        candidates.append((logical, spec.vendor, score, cost, comm))
+        candidates.append((logical, spec.vendor, score, cost, comm, vlm_used))
 
     full = _sort(candidates, strategy, complexity)
     avail = [c for c in full if _available(c[0], cfg)] if filter_on else full
@@ -119,8 +139,8 @@ def _available(logical: str, cfg: RouterConfig) -> bool:
 
 
 def _sort(
-    candidates: list[tuple[str, str, float, float]], strategy: str, complexity: str
-) -> list[tuple[str, str, float, float]]:
+    candidates: list[tuple[str, str, float, float, float | None, bool]], strategy: str, complexity: str
+) -> list[tuple[str, str, float, float, float | None, bool]]:
     """按策略与复杂度对 (logical, vendor, score, cost) 排序（降序）。"""
     min_cost = min(c[3] for c in candidates)
     cost_index = lambda c: c[3] / min_cost  # noqa: E731
@@ -147,13 +167,17 @@ def _pick_backup(eligible: list[ModelChoice], primary: ModelChoice, data: Router
     return None
 
 
-def _to_choice(item: tuple[str, str, float, float, float | None], rank: int, strategy: str, cfg: RouterConfig) -> ModelChoice:
-    logical, vendor, score, cost, comm = item
+def _to_choice(item: tuple[str, str, float, float, float | None, bool], rank: int, strategy: str, cfg: RouterConfig) -> ModelChoice:
+    logical, vendor, score, cost, comm, vlm_used = item
     reason = {
         "纯能力优先": f"能力分最高（{score:.1f}）",
         "性价比优先": f"性价比最优（能力分 {score:.1f} / 成本指数）",
         "平衡": "平衡档推荐（兼顾能力与成本）",
     }[strategy]
+    if vlm_used:
+        reason += "；VLM实测分"
+    else:
+        reason += "；文本代理分"
     if comm is not None:
         reason += f"；含社区分叠加(α={cfg.community_alpha:.1f},β={cfg.community_beta:.1f})"
     return ModelChoice(logical_name=logical, vendor=vendor, score=score, cost=cost, rank=rank, reason=reason)
