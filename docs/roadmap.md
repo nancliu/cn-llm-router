@@ -1,8 +1,8 @@
 # cn-llm-router 长程任务路线图
 
 > 创建：2026-09-24
-> 更新：2026-09-27（第二批 8 项启动）
-> 基线：v0.1.0 已发布 PyPI，125 pytest 全绿，ADR 0001-0012，数据版本 v1-20260923
+> 更新：2026-09-27（第二批 9 项全部完成并推送）
+> 基线：v0.1.0 已发布 PyPI，147 pytest 全绿，ADR 0001-0017，数据版本 v1-20260923
 > 原则：ADR 先行、数字可溯源、分阶段交付（每阶段结束有验证与交付物）、不阻塞发布
 
 ## 一、目标
@@ -147,19 +147,19 @@ v0.1.0 已发布 PyPI（trusted publishing 链路验证可用）。后续功能�
 - [x] Phase 4：P2-b 评测扩展（golden cases 108→180 + eval_multimodal.py + 三模型全量评测报告，101 测试全绿）
 - [x] Phase 5：P3 缓存+统计+CLI（ADR-0010/0011/0012 + cache.py + stats.py + cost_report.py + CLI 增强，125 测试全绿，v0.1.0 已发布）
 
-## 六、第二批 8 项（2026-09-27 启动）
+## 六、第二批 9 项（2026-09-27 全部完成）
 
-| 编号 | 优先级 | 工作项 | 核心产出 |
-|---|---|---|---|
-| P0-1 | P0 | CI 评测回归门禁 | release.yml/ci.yml 两级门禁（离线 pytest + release 全量 180 题对比基线） |
-| P0-2 | P0 | roadmap 状态回填 | 本文件更新 |
-| P1-3 | P1 | Web 面板 | 本地小面板（推荐查询+成本报表+缓存状态），零外部依赖优先 |
-| P1-4 | P1 | 多模态评分补真 | 真实 VLM 实测分数回填 data 层 + 选择器融合，ADR |
-| P1-5 | P1 | 补齐 5 家 key 全量评测 | 评测框架扩展 + 待配 key 清单文档（用户侧配 key 后触发） |
-| P2-6 | P2 | Sub-Agent 编排实战集成 | Cursor/Claude Code/豆包 agent 用法指南 + 可运行示例 |
-| P2-7 | P2 | 打分表 v2 数据刷新 | 结合 monitor_versions 结果更新 data/*.csv，过质量门禁 |
-| P2-8 | P2 | 缓存持久化 | cache.py 持久化落地（JSON/SQLite），配测试 |
-| P3-9 | P3 | 社区基建 | CONTRIBUTING + issue 模板 + 评分共建规范 + README 英文版 |
+| 编号 | 优先级 | 工作项 | 提交 | 状态 |
+|---|---|---|---|---|
+| P0-1 | P0 | CI 评测回归门禁 | `43511e4` | ✅ ADR-0013 + release.yml eval-regression job + --check-baseline |
+| P0-2 | P0 | roadmap 状态回填 | `e679e6f` | ✅ 本文件 |
+| P1-3 | P1 | Web 面板 | `224a232` | ✅ ADR-0017 + web.py 标准库 http.server + 启动脚本 + CLI web |
+| P1-4 | P1 | 多模态评分补真 | `8989e1a` | ✅ ADR-0015 + 20题VLM实测(Qwen 100%/CED 65%) + vlm_scores.csv + 选择器融合 |
+| P1-5 | P1 | 补齐 5 家 key 全量评测 | `412b009` | ✅ --list-ready + eval-setup.md + .env.example（框架+文档，配 key 后触发） |
+| P2-6 | P2 | Sub-Agent 编排实战集成 | `68f3d82` | ✅ orchestrator-guide.md + examples/orchestrate_demo.py + README |
+| P2-7 | P2 | 打分表 v2 数据刷新 | `6d4aa3d` | ✅ ADR-0016 + Qwen版本修正 + 全表as_of=2026-09-27 |
+| P2-8 | P2 | 缓存持久化 | `7c6887b` | ✅ ADR-0014 + cache.py save/load/flush/auto_save |
+| P3-9 | P3 | 社区基建 | `605c581` | ✅ contributing.md + ISSUE_TEMPLATE(4) + README.en.md |
 
-执行顺序：P0-2 → P0-1 → P2-8 → P2-6 → P1-3 → P1-4 → P3-9 → P1-5（框架+文档）。
-每项完成即提交推送，不必等全部完成。
+**测试总数：147 passed**（基线 125 + 第二批新增 22）。
+**提交范围：`e679e6f..6d4aa3d`**（9 个提交），已推送 origin main。
