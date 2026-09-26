@@ -14,6 +14,7 @@
         [--output reports/eval-<ts>.json] \
         [--dry-run]          # 不调用任何 LLM：只校验 key 状态与数据结构
         [--check-baseline]   # Release 门禁（ADR-0013）：对比基线阈值，低于则 exit 1
+    python3 scripts/eval_classifier.py --list-ready   # 只看哪些模型已配/未配 key，不调用 LLM
 
 前置：至少一个候选模型已配置 API key（providers.example.yaml 的 key_env 对应环境变量）。
 """
@@ -183,6 +184,29 @@ def print_report(res: dict) -> None:
                 print("    ...（其余省略，见 JSON 报告）")
 
 
+def list_ready(cfg) -> None:
+    """打印当前已配 / 未配 key 的模型清单（不加载 golden cases、不调用任何 LLM）。
+
+    覆盖 config/providers.yaml（缺省 providers.example.yaml）里的全部模型，
+    未配 key 的一并打出 key_env 变量名，方便照 .env.example 补全。
+    """
+    ready, waiting = [], []
+    for name, spec in cfg.providers.items():
+        if key_available(spec):
+            ready.append((name, spec.provider, spec.key_env))
+        else:
+            waiting.append((name, spec.provider, spec.key_env))
+    print(f"== key 就绪清单（共 {len(cfg.providers)} 个模型）==")
+    print(f"\n已配置 key（{len(ready)} 个，可直接参与评测）：")
+    for name, prov, env in ready:
+        print(f"  [就绪] {name:<26} provider={prov:<12} {env}=***")
+    print(f"\n未配置 key（{len(waiting)} 个，评测时自动跳过）：")
+    for name, prov, env in waiting:
+        print(f"  [待配] {name:<26} provider={prov:<12} 需环境变量 {env}")
+    print("\nkey 获取入口与 .env 模板见 docs/eval-setup.md；"
+          "配好后重跑本脚本（或 --dry-run 先校验）即可纳入。")
+
+
 def main():
     ap = argparse.ArgumentParser(description="LLM 判类在线评测")
     ap.add_argument("--models", default=None, help="候选模型逗号分隔；缺省读 config/classifier.example.yaml 的 models")
@@ -192,14 +216,30 @@ def main():
     ap.add_argument("--dry-run", action="store_true", help="不调用 LLM：校验 key 状态与数据结构")
     ap.add_argument("--check-baseline", action="store_true",
                     help="Release 门禁：对比 EVAL_BASELINE 阈值，低于 EVAL_THRESHOLD 则 exit 1")
+    ap.add_argument("--list-ready", action="store_true",
+                    help="只打印已配/未配 key 的模型清单（含 key_env 变量名），不加载 cases、不调用 LLM")
     args = ap.parse_args()
 
     cfg = load_config()
+
+    if args.list_ready:
+        list_ready(cfg)
+        return
+
     data = load_data(cfg.data_dir)
     cases = load_cases(args.cases)
 
     models = args.models.split(",") if args.models else list(cfg.classifier_models)
-    ready = [m for m in models if key_available(cfg.providers.get(m))]
+    ready = []
+    # 明确打印每个未配 key / 未注册模型的跳过原因（不再静默排除）
+    for m in models:
+        spec = cfg.providers.get(m)
+        if spec is None:
+            print(f"未在 config/providers.yaml 注册，跳过 {m}")
+        elif not key_available(spec):
+            print(f"未配置 {spec.key_env}，跳过 {m}")
+        else:
+            ready.append(m)
     if not ready:
         need = ", ".join(f"{m}({cfg.providers[m].key_env})" for m in models if m in cfg.providers)
         print(f"未配置任何可用 API key：{need}")
