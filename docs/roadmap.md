@@ -1,7 +1,8 @@
 # cn-llm-router 长程任务路线图
 
 > 创建：2026-09-24
-> 基线：v0.1.0（未发布），73 pytest 全绿，数据版本 v1-20260923
+> 更新：2026-09-27（第二批 8 项启动）
+> 基线：v0.1.0 已发布 PyPI，125 pytest 全绿，ADR 0001-0012，数据版本 v1-20260923
 > 原则：ADR 先行、数字可溯源、分阶段交付（每阶段结束有验证与交付物）、不阻塞发布
 
 ## 一、目标
@@ -133,16 +134,9 @@
 - LMArena 国产模型覆盖不足 → ADR 中明确覆盖范围，缺口标待补充
 - 多模态实测需要图片素材与 key → 脚本支持 dry-run，有 key 时才真实调用
 
-## 四、v0.1.0 发布步骤（用户侧操作，不阻塞开发）
+## 四、v0.1.0 发布（已完成）
 
-发布是用户侧操作，与开发并行：
-
-1. 用户在 GitHub 仓库 Settings → Environments 创建 `pypi` 环境（trusted publishing）
-2. 在 PyPI 项目中配置 trusted publisher（仓库 nancliu/cn-llm-router，workflow `release.yml`，environment `pypi`）
-3. 本地打 tag：`git tag v0.1.0 && git push origin v0.1.0`
-4. GitHub Actions `release.yml` 自动构建并发布到 PyPI
-
-> 此项不阻塞 Phase 1-5 的开发；各阶段功能可在 v0.1.0 后以 v0.2.0+ 发布。
+v0.1.0 已发布 PyPI（trusted publishing 链路验证可用）。后续功能以 v0.2.0+ 发布。
 
 ## 五、阶段状态
 
@@ -151,4 +145,21 @@
 - [x] Phase 2：P1-b 版本监控（ADR-0008 + monitor_versions.py + 11 测试，93 测试全绿）
 - [x] Phase 3：P2-a 社区评测（ADR-0009 + community_scores.csv 9 条 LMArena 数据 + 选择器融合 + 8 测试，101 测试全绿）
 - [x] Phase 4：P2-b 评测扩展（golden cases 108→180 + eval_multimodal.py + 三模型全量评测报告，101 测试全绿）
-- [ ] Phase 5：P3 缓存与统计（可选，待用户确认是否继续）
+- [x] Phase 5：P3 缓存+统计+CLI（ADR-0010/0011/0012 + cache.py + stats.py + cost_report.py + CLI 增强，125 测试全绿，v0.1.0 已发布）
+
+## 六、第二批 8 项（2026-09-27 启动）
+
+| 编号 | 优先级 | 工作项 | 核心产出 |
+|---|---|---|---|
+| P0-1 | P0 | CI 评测回归门禁 | release.yml/ci.yml 两级门禁（离线 pytest + release 全量 180 题对比基线） |
+| P0-2 | P0 | roadmap 状态回填 | 本文件更新 |
+| P1-3 | P1 | Web 面板 | 本地小面板（推荐查询+成本报表+缓存状态），零外部依赖优先 |
+| P1-4 | P1 | 多模态评分补真 | 真实 VLM 实测分数回填 data 层 + 选择器融合，ADR |
+| P1-5 | P1 | 补齐 5 家 key 全量评测 | 评测框架扩展 + 待配 key 清单文档（用户侧配 key 后触发） |
+| P2-6 | P2 | Sub-Agent 编排实战集成 | Cursor/Claude Code/豆包 agent 用法指南 + 可运行示例 |
+| P2-7 | P2 | 打分表 v2 数据刷新 | 结合 monitor_versions 结果更新 data/*.csv，过质量门禁 |
+| P2-8 | P2 | 缓存持久化 | cache.py 持久化落地（JSON/SQLite），配测试 |
+| P3-9 | P3 | 社区基建 | CONTRIBUTING + issue 模板 + 评分共建规范 + README 英文版 |
+
+执行顺序：P0-2 → P0-1 → P2-8 → P2-6 → P1-3 → P1-4 → P3-9 → P1-5（框架+文档）。
+每项完成即提交推送，不必等全部完成。
