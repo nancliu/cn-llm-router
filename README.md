@@ -1,5 +1,7 @@
 # cn-llm-router
 
+[English](./README.en.md) | 中文
+
 国内大模型选择器：识别任务类别（12 类）与复杂度（3 级），依据公开评测合成的评分矩阵与性价比策略，推荐并路由到最合适的国产大模型（DeepSeek / Qwen / Kimi / GLM / 豆包 / 混元 / 讯飞 / MiniMax 等）。
 
 ## 状态
@@ -92,6 +94,9 @@ cn-llm-router list-models / list-categories / list-strategies                   
 - `CONTEXT.md` — 项目上下文与词汇表
 - `docs/adr/` — 架构决策记录（0001 评分口径 / 0002 分类器 / 0003 网关 / 0004 数据源 / 0005 可用性过滤）
 - `docs/spec/router-v1.md` — 路由层 v1 规格
+- `docs/orchestrator-guide.md` — Sub-Agent 编排实战指南（Cursor / Claude Code / 豆包集成）
+- `docs/eval-setup.md` — 评测 key 清单与全量评测配置
+- `docs/contributing.md` — 参与开发（环境搭建 / ADR 流程 / 数据贡献规范）
 - `docs/agents/` — agent 工作约定（issue tracker / triage / domain）
 
 ## License

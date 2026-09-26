@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: 问题讨论 / 问答
+    url: https://github.com/<org>/cn-llm-router/discussions
+    about: 使用疑问、选型讨论请发 Discussion，不要直接开 issue。
+  - name: 文档与 ADR
+    url: https://github.com/<org>/cn-llm-router/tree/main/docs
+    about: 先查 docs/ 与 docs/adr/ 是否已有相关说明。
