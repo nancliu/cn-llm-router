@@ -37,6 +37,28 @@ PY
 
 三档策略：`纯能力优先` / `平衡`（默认）/ `性价比优先`；默认按已配置 key 过滤推荐（`config/selector.yaml` 中 `availability_filter: false` 关闭，从全量集比较）。
 
+## Sub-Agent 多模型编排
+
+一个大任务拆成多个性质不同的子任务（编码 / 文书 / 数据分析……），每个子任务独立判类、选模型、拿独立 client（ADR-0007）：
+
+```python
+from cn_llm_router import SubTaskSpec, orchestrate
+
+result = orchestrate([
+    SubTaskSpec(id="coding", description="实现一个带重试的 HTTP 客户端", strategy="纯能力优先"),
+    SubTaskSpec(id="doc",    description="把上面的改动整理成技术周报", strategy="性价比优先"),
+    SubTaskSpec(id="data",   description="统计最近 30 天失败率并分组出趋势"),
+], strategy="平衡", availability_filter=True)
+
+for r in result.subtasks:
+    print(r.spec.id, r.classification.category, "->", r.recommendation.primary.logical_name)
+    # resp = r.client.chat.completions.create(
+    #     model=r.recommendation.primary.logical_name,
+    #     messages=[{"role": "user", "content": r.spec.description}])
+```
+
+零 key 离线示例：`python examples/orchestrate_demo.py`（规则兜底分类、不发请求）。接入 Cursor / Claude Code / 豆包等 Agent 客户端的完整集成方式见 [docs/orchestrator-guide.md](docs/orchestrator-guide.md)。
+
 ## CLI
 
 ```bash
