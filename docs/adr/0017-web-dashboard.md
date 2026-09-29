@@ -40,7 +40,7 @@ ADR-0012 已把缓存状态与成本报表接入 `cn-llm-router` CLI：`cache-st
 
 ## 安全
 
-- 仅监听 `127.0.0.1`（默认端口 8765），不绑定 `0.0.0.0`，不暴露公网；
+- 仅监听 `127.0.0.1`（默认端口 10040），不绑定 `0.0.0.0`，不暴露公网；
 - 所有用户输入（prompt、查询参数）经 `html.escape` 转义后再渲染，防 XSS；
 - 不读取/外传任何 API key，页面只展示推荐结果与本地统计。
 
@@ -48,6 +48,6 @@ ADR-0012 已把缓存状态与成本报表接入 `cn-llm-router` CLI：`cache-st
 
 - 新增 `cn_llm_router/web.py`：`run_server(host, port, config)` 入口与页面渲染。
 - 新增 `scripts/start_web.py`：命令行启动脚本。
-- `cn_llm_router/cli.py`：新增 `web` 子命令（`cn-llm-router web [--port 8765]`）。
+- `cn_llm_router/cli.py`：新增 `web` 子命令（`cn-llm-router web [--port 10040]`）。
 - 新增 `tests/test_web.py`：对随机端口起服务、发请求验证四个页面。
 - 无新依赖；无配置格式变更。

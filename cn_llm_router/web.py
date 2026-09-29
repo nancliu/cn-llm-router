@@ -326,7 +326,7 @@ def create_app(config: RouterConfig | None = None):
     return handler_cls, cfg, data, classifier
 
 
-def run_server(host: str = "127.0.0.1", port: int = 8765, config: RouterConfig | None = None) -> None:
+def run_server(host: str = "127.0.0.1", port: int = 10040, config: RouterConfig | None = None) -> None:
     """启动本地面板（仅监听 127.0.0.1，不暴露公网）。"""
     handler_cls, cfg, data, classifier = create_app(config)
     httpd = HTTPServer((host, port), handler_cls)

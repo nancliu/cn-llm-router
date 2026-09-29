@@ -268,7 +268,7 @@ def main(argv=None):
 
     p = sub.add_parser("web", parents=[parent], help="启动本地面板（ADR-0017，仅监听 127.0.0.1）")
     p.add_argument("--host", default="127.0.0.1", help="监听地址（默认 127.0.0.1，不建议改绑公网）")
-    p.add_argument("--port", type=int, default=8765, help="监听端口（默认 8765）")
+    p.add_argument("--port", type=int, default=10040, help="监听端口（默认 10040）")
 
     args = ap.parse_args(argv)
     cfg = load_config(args.config_dir)
