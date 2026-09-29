@@ -173,7 +173,7 @@ class Classifier:
             ],
             temperature=0,
             response_format={"type": "json_object"},
-            max_tokens=1024,  # 推理型模型（如 deepseek CED）思考链长，需保障输出空间
+            max_tokens=self.cfg.classifier_max_tokens_map.get(model, self.cfg.classifier_max_tokens),
             timeout=self.cfg.classifier_timeout,
         )
         content = resp.choices[0].message.content

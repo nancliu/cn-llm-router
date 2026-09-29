@@ -10,3 +10,8 @@ classifier:
     - DeepSeek-V4.1-Flash-CED
     - 豆包Seed-2.1-Pro
   timeout: 30
+  # 分类输出 token 上限（2026-09-29 提速：默认 256，分类输出仅短 JSON；
+  # 推理型模型思考链长需更大空间，按模型覆盖）
+  max_tokens: 256
+  max_tokens_map:
+    DeepSeek-V4.1-Flash-CED: 1024

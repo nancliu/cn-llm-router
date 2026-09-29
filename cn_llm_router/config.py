@@ -92,6 +92,10 @@ class RouterConfig:
     providers: dict[str, ProviderSpec] = field(default_factory=dict)
     classifier_models: list[str] = field(default_factory=lambda: ["Qwen3.8-Max-0902", "DeepSeek-V4.1-Flash-CED", "豆包Seed-2.1-Pro"])
     classifier_timeout: float = 30.0
+    # 分类输出 token 上限（2026-09-29 提速：默认 256，分类输出仅短 JSON；
+    # 推理型模型思考链长，经 max_tokens_map 按模型覆盖）
+    classifier_max_tokens: int = 256
+    classifier_max_tokens_map: dict[str, int] = field(default_factory=dict)
     availability_filter: bool = True
     max_failover: int = 1
     weights_override: Optional[dict] = None  # {category: {dimension: weight}} 或 None
@@ -170,6 +174,10 @@ def load_config(config_dir: Optional[str] = None) -> RouterConfig:
         if crow.get("models"):
             cfg.classifier_models = [str(m) for m in crow["models"]]
         cfg.classifier_timeout = float(crow.get("timeout", cfg.classifier_timeout))
+        cfg.classifier_max_tokens = int(crow.get("max_tokens", cfg.classifier_max_tokens))
+        mt_map = crow.get("max_tokens_map") or {}
+        if isinstance(mt_map, dict):
+            cfg.classifier_max_tokens_map = {str(k): int(v) for k, v in mt_map.items()}
 
     # selector 覆盖
     sfile = cdir / "selector.yaml"
