@@ -64,13 +64,21 @@ class Classifier:
         self.last_model: Optional[str] = None
 
     # ---------- 主入口 ----------
+    def _pick_chain(self, text: str) -> list[str]:
+        """双模型分流（方案 A）：命中视觉信号走主链（Qwen VLM 强），否则走快速链（CED 快）。"""
+        lowered = text.lower()
+        if any(kw in lowered for kw in self.cfg.multimodal_keywords):
+            return list(self.cfg.classifier_models)
+        return list(self.cfg.classifier_text_chain)
+
     def classify(self, prompt: str) -> Classification:
         text = str(prompt)
+        chain = self._pick_chain(text)
 
-        # 查缓存（ADR-0010）：键 = 规范化 prompt + 分类模型链 + 数据版本
+        # 查缓存（ADR-0010）：键 = 规范化 prompt + 实际使用的模型链 + 数据版本
         key: Optional[str] = None
         if self.cache is not None:
-            key = make_cache_key(text, self.cfg.classifier_models, self.data.version)
+            key = make_cache_key(text, chain, self.data.version)
             cached = self.cache.get(key)
             if cached is not None:
                 res = Classification(**cached)
@@ -81,7 +89,7 @@ class Classifier:
             res = self._default_fallback("输入为空")
         else:
             t = text.strip()
-            llm_res = self._try_llm(t)
+            llm_res = self._try_llm(t, chain)
             if llm_res is not None:
                 res = llm_res
             else:
@@ -96,8 +104,9 @@ class Classifier:
         return res
 
     # ---------- LLM 判类 ----------
-    def _try_llm(self, text: str) -> Optional[Classification]:
-        for model in self.cfg.classifier_models:
+    def _try_llm(self, text: str, chain: Optional[list[str]] = None) -> Optional[Classification]:
+        chain = chain if chain is not None else list(self.cfg.classifier_models)
+        for model in chain:
             prov = self.cfg.providers.get(model)
             if prov is None or not key_available(prov):
                 continue

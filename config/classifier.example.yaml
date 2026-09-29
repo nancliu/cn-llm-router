@@ -15,3 +15,40 @@ classifier:
   max_tokens: 256
   max_tokens_map:
     DeepSeek-V4.1-Flash-CED: 1024
+  # 双模型分类（方案 A，2026-09-29）：prompt 命中视觉信号走主链，纯文本走快速链
+  text_chain:
+    - DeepSeek-V4.1-Flash-CED
+    - Qwen3.8-Max-0902
+    - 豆包Seed-2.1-Pro
+  multimodal_keywords:
+    - 图片
+    - 图像
+    - 截图
+    - 照片
+    - 看图
+    - 这张图
+    - 识别图中
+    - 识别图片
+    - 图片内容
+    - ocr
+    - 多模态
+    - 设计稿
+    - 海报
+    - logo
+    - 标志
+    - banner
+    - 横幅
+    - 头像
+    - 插画
+    - 配图
+    - 示意图
+    - 流程图
+    - 架构图
+    - 界面图
+    - 页面截图
+    - 产品图
+    - 实物图
+    - 视频画面
+    - 视频里的
+    - 视觉设计
+    - 画布

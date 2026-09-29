@@ -91,6 +91,16 @@ class RouterConfig:
     config_dir: Path = DEFAULT_CONFIG_DIR
     providers: dict[str, ProviderSpec] = field(default_factory=dict)
     classifier_models: list[str] = field(default_factory=lambda: ["Qwen3.8-Max-0902", "DeepSeek-V4.1-Flash-CED", "豆包Seed-2.1-Pro"])
+    # 双模型分类（2026-09-29 方案 A）：prompt 命中视觉信号 → 主链（Qwen VLM 强，
+    # 实测多模态 100%）；纯文本 → 快速链（CED 快 6 倍，端到端 98.9%）
+    classifier_text_chain: list[str] = field(default_factory=lambda: ["DeepSeek-V4.1-Flash-CED", "Qwen3.8-Max-0902", "豆包Seed-2.1-Pro"])
+    # 视觉信号词表（内置默认，与 classifier.example.yaml 一致；命中走主链 Qwen，未命中走快速链 CED）
+    multimodal_keywords: list[str] = field(default_factory=lambda: [
+        "图片", "图像", "截图", "照片", "看图", "这张图", "识别图中", "识别图片",
+        "图片内容", "ocr", "多模态", "设计稿", "海报", "logo", "标志", "banner",
+        "横幅", "头像", "插画", "配图", "示意图", "流程图", "架构图", "界面图",
+        "页面截图", "产品图", "实物图", "视频画面", "视频里的", "视觉设计", "画布",
+    ])
     classifier_timeout: float = 30.0
     # 分类输出 token 上限（2026-09-29 提速：默认 256，分类输出仅短 JSON；
     # 推理型模型思考链长，经 max_tokens_map 按模型覆盖）
@@ -178,6 +188,11 @@ def load_config(config_dir: Optional[str] = None) -> RouterConfig:
         mt_map = crow.get("max_tokens_map") or {}
         if isinstance(mt_map, dict):
             cfg.classifier_max_tokens_map = {str(k): int(v) for k, v in mt_map.items()}
+        if crow.get("text_chain"):
+            cfg.classifier_text_chain = [str(m) for m in crow["text_chain"]]
+        kws = crow.get("multimodal_keywords")
+        if isinstance(kws, list):
+            cfg.multimodal_keywords = [str(k) for k in kws]
 
     # selector 覆盖
     sfile = cdir / "selector.yaml"

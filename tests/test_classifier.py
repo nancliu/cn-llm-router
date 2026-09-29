@@ -115,6 +115,55 @@ def test_no_llm_no_rule_default(data, cfg):
     assert res.fallback_reason is not None
 
 
+# ---- 双模型分流（方案 A，2026-09-29） ----
+
+def _with_both_keys(monkeypatch):
+    _with_key(monkeypatch)  # Qwen（主链，百炼 DASHSCOPE_API_KEY）
+    monkeypatch.setenv("VOLCENGINE_API_KEY", "test-key")  # CED（快速链，火山方舟）
+
+
+def test_multimodal_prompt_uses_main_chain(data, cfg, monkeypatch):
+    """命中视觉信号（"图片"）→ 走主链，第一候选 Qwen3.8-Max-0902。"""
+    _with_both_keys(monkeypatch)
+    seen: list[str] = []
+
+    def fake(prompt, model):
+        seen.append(model)
+        return {"category": "多模态理解", "complexity": "低", "confidence": 0.9, "second_guess": ""}
+
+    res = _clf(data, cfg, fake).classify("识别这张图片里的文字")
+    assert seen and seen[0] == "Qwen3.8-Max-0902"
+    assert res.category == "多模态理解"
+
+
+def test_plain_text_prompt_uses_fast_chain(data, cfg, monkeypatch):
+    """纯文本 prompt（无视觉信号）→ 走快速链，第一候选 DeepSeek-V4.1-Flash-CED。"""
+    _with_both_keys(monkeypatch)
+    seen: list[str] = []
+
+    def fake(prompt, model):
+        seen.append(model)
+        return {"category": "知识问答/检索", "complexity": "低", "confidence": 0.9, "second_guess": ""}
+
+    res = _clf(data, cfg, fake).classify("什么是贝叶斯定理")
+    assert seen and seen[0] == "DeepSeek-V4.1-Flash-CED"
+    assert res.category == "知识问答/检索"
+
+
+def test_fast_chain_unavailable_falls_back_to_main(data, cfg, monkeypatch):
+    """快速链 CED 未配 key → 自动落入主链 Qwen（降级链仍工作）。"""
+    _with_key(monkeypatch)  # 只配 Qwen，不配 CED
+    seen: list[str] = []
+
+    def fake(prompt, model):
+        seen.append(model)
+        return {"category": "知识问答/检索", "complexity": "低", "confidence": 0.9, "second_guess": ""}
+
+    res = _clf(data, cfg, fake).classify("什么是贝叶斯定理")
+    assert seen and seen[0] == "Qwen3.8-Max-0902"
+    assert res.category == "知识问答/检索"
+
+
 # ---- golden cases 覆盖率 ----
 
 def test_golden_cases_rule_testable_subset(data, cfg):
