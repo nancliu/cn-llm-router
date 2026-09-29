@@ -14,7 +14,7 @@ import html as _html
 import os
 import sys
 from datetime import datetime
-from http.server import BaseHTTPRequestHandler, HTTPServer
+from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from urllib.parse import parse_qs, urlparse
 
 from .classifier import Classifier
@@ -162,7 +162,9 @@ def _make_handler(cfg: RouterConfig, data: RouterData, classifier: Classifier):
         )
         form = (
             "<div class=\"card\"><h1>推荐查询</h1>"
-            "<form method=\"post\" action=\"/route\">"
+            "<form method=\"post\" action=\"/route\" "
+            "onsubmit=\"this.querySelector('button').disabled=true;"
+            "document.getElementById('busy').style.display='block';return true;\">"
             "<p><textarea name=\"prompt\" placeholder=\"输入你的任务 prompt，例如：写一个 Python 函数解析 JSON\">"
             f"{_html.escape(prompt)}</textarea></p>"
             "<p>策略：<select name=\"strategy\">"
@@ -171,7 +173,10 @@ def _make_handler(cfg: RouterConfig, data: RouterData, classifier: Classifier):
             f"{' checked' if availability_filter else ''}> "
             "可用性过滤（仅推荐已配 key 的模型）</label></p>"
             "<p><button type=\"submit\">查询推荐</button></p>"
-            "</form></div>"
+            "</form>"
+            "<p id=\"busy\" class=\"warn\" style=\"display:none\">⏳ 处理中……"
+            "分类调用约需 10~30 秒（默认 Qwen 分类模型），请勿重复提交。</p>"
+            "</div>"
         )
         body = form
         if result_html:
@@ -327,9 +332,13 @@ def create_app(config: RouterConfig | None = None):
 
 
 def run_server(host: str = "127.0.0.1", port: int = 10040, config: RouterConfig | None = None) -> None:
-    """启动本地面板（仅监听 127.0.0.1，不暴露公网）。"""
+    """启动本地面板（仅监听 127.0.0.1，不暴露公网）。
+
+    多线程（ThreadingHTTPServer）：分类调用较慢（默认 Qwen 约 20~30s）时
+    不阻塞其它请求；缓存由 ClassifyCache 内部 RLock 保证线程安全。
+    """
     handler_cls, cfg, data, classifier = create_app(config)
-    httpd = HTTPServer((host, port), handler_cls)
+    httpd = ThreadingHTTPServer((host, port), handler_cls)
     print(f"cn-llm-router 本地面板已启动：http://{host}:{port}  （Ctrl+C 退出）")
     try:
         httpd.serve_forever()

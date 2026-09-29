@@ -1,6 +1,6 @@
 """本地面板测试（ADR-0017）。
 
-在随机端口起 HTTPServer（线程内 serve_forever），用 urllib.request 发请求。
+在随机端口起 ThreadingHTTPServer（线程内 serve_forever），用 urllib.request 发请求。
 cfg 来自临时空配置目录 + CN_LLM_ROUTER_NO_DOTENV=1（conftest），
 classify 走确定性规则关键词兜底，不真实调 LLM。
 """
@@ -9,7 +9,7 @@ import json
 import threading
 import urllib.parse
 import urllib.request
-from http.server import HTTPServer
+from http.server import ThreadingHTTPServer
 
 import pytest
 
@@ -25,7 +25,7 @@ def base_url(tmp_path):
     # 把统计日志指到一个不存在的文件，便于 /cost 空数据用例
     cfg = dataclasses.replace(cfg, stats_log_path=str(tmp_path / "no_such.jsonl"))
     handler_cls, _, _, _ = create_app(cfg)
-    httpd = HTTPServer(("127.0.0.1", 0), handler_cls)
+    httpd = ThreadingHTTPServer(("127.0.0.1", 0), handler_cls)
     port = httpd.server_address[1]
     t = threading.Thread(target=httpd.serve_forever, daemon=True)
     t.start()
@@ -99,3 +99,21 @@ def test_cache_hit_accumulates(base_url):
     assert m is not None
     hits = int(m.group(1))
     assert hits >= 1
+
+
+# 6. 多线程并发请求互不阻塞（ThreadingHTTPServer）：两个 POST 同时发出都应返回 200
+def test_concurrent_posts_do_not_block(base_url):
+    form = {"prompt": "写一个Python函数解析JSON", "strategy": "平衡"}
+    results: list[tuple[int, str]] = []
+
+    def do_post() -> None:
+        results.append(_post(base_url + "/route", form))
+
+    threads = [threading.Thread(target=do_post) for _ in range(4)]
+    for t in threads:
+        t.start()
+    for t in threads:
+        t.join(timeout=10)
+    assert len(results) == 4
+    assert all(code == 200 for code, _ in results)
+    assert all("程序编码" in body for _, body in results)

@@ -28,7 +28,7 @@ ADR-0012 已把缓存状态与成本报表接入 `cn-llm-router` CLI：`cache-st
 - **零外部依赖**：只标准库（`http.server` / `html` / `json` / `urllib.parse` / `threading` 不需要），不引入 Flask/FastAPI，不引入前端框架，纯 HTML + 内联 CSS。
 - **复用现有 API，不重复实现**：分类用 `Classifier.classify`，选模型用 `selector.select`，成本汇总用 `cost_report.summarize`，缓存用 `ClassifyCache.stats`；不改 `classify` / `select` / `route` 的签名与行为。
 - **持久 Classifier 实例换缓存命中**：公共 `route()` 每次新建 `Classifier`，缓存按实例生命周期清零；面板在 `run_server` 里建一个长驻 `Classifier`，`POST /route` 复用它分类，`/cache` 读它的 `cache.stats`，命中数才能跨请求累积。
-- **单线程 `HTTPServer`**：遵循 `ClassifyCache` "单进程串行使用、不加锁"的约定，本地单人面板无需并发；请求串行处理，缓存读写无竞态。
+- **多线程 `ThreadingHTTPServer`（2026-09-29 更新）**：初版用单线程 `HTTPServer`（慢请求占死服务器、连接队列满后新请求被拒，用户实测分类约 20~30s 时面板表现为"无响应"）。现改为 `ThreadingHTTPServer`，慢分类不阻塞其它请求；`ClassifyCache` 内部改用 `RLock`（原"单进程串行不加锁"约定更新为线程安全），前端提交时禁用按钮并显示"处理中"提示防重复提交。单机单人场景并发度低，锁开销可忽略。
 
 ## 不做什么
 
