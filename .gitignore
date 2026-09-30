@@ -15,3 +15,7 @@ build/
 .vscode/
 .pytest_cache/
 *.egg-info/
+sheets/
+reports/_shots/
+reports/mm-eval-*.json
+reports/version-monitor-*.json
