@@ -76,10 +76,10 @@ def run_model(cfg, data, model: str, cases: list[dict]) -> dict:
 
 
 # 评测门禁基线（ADR-0013）。数字必须可溯源：
-# 来源 reports/eval-20260924.json，2026-09-24 全量 180 题人工评测；
+# 来源 reports/eval-qwen-fix-20260930.json（2026-09-30 全量 180 题，分类规则回归修复后 ADR-0020）；
 # 发布前重跑评测后回写本常量，禁止凭空编造。
 EVAL_BASELINE = {
-    "Qwen3.8-Max-0902": 0.994,
+    "Qwen3.8-Max-0902": 1.0,
     "DeepSeek-V4.1-Flash-CED": 0.989,
     "豆包Seed-2.1-Pro": 0.989,
 }
