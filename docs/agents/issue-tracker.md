@@ -2,6 +2,8 @@
 
 本仓库的 issue 与 spec 统一放在 GitHub Issues，用 `gh` CLI 操作。仓库由 `git remote -v` 自动推断，在 clone 内运行即可。
 
+> ⚠️ Windows 本地（DoubaoWork 环境）实测：gh 2.92 对 CWD 的仓库自动推断失败（`gh issue create --label ...` 会报 `label not found`、`gh label list` / `gh repo view` 空输出），但仓库 labels 实际存在。**本环境所有 gh 命令必须显式加 `--repo nancliu/cn-llm-router`**（或任意 remote 仓库名），否则按"推断失败"处理、不要误判为 label 缺失。
+
 ## 约定
 
 - **创建 issue**：`gh issue create --title "..." --body "..."`，多行正文用 heredoc。
