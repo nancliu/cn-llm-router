@@ -109,6 +109,35 @@ def _make_handler(cfg: RouterConfig, data: RouterData, classifier: Classifier):
             f"<span class=\"muted\">理由：{_html.escape(m.reason)}</span></p>"
         )
 
+    def _foreign_ref_section() -> str:
+        """ADR-0019：国外主流模型参照（仅展示，不参与路由；真实实测留社区）。"""
+        foreign = [f for f in data.foreign_models if f.region == "国外"]
+        if not foreign:
+            return ""
+        rows = []
+        for f in foreign:
+            elo = f"{f.lmarena_elo:.0f}" if f.lmarena_elo is not None else "待补充"
+            cost = f"{f.cost:.2f} 元/百万tok" if f.cost is not None else "缺价"
+            rows.append(
+                "<tr>"
+                f"<td>{_html.escape(f.model)}</td>"
+                f"<td style='text-align:right'>{elo}</td>"
+                f"<td style='text-align:right'>{cost}</td>"
+                f"<td>{_html.escape(f.availability)}</td>"
+                f"<td>{_html.escape(f.open_source)}</td>"
+                "</tr>"
+            )
+        return (
+            "<div class=\"card\"><h2>国外主流模型参照</h2>"
+            "<table><tr><th>模型</th><th style='text-align:right'>LMArena Elo</th>"
+            "<th style='text-align:right'>综合成本</th><th>国内可用性</th><th>开源</th></tr>"
+            f"{''.join(rows)}</table>"
+            "<p class=\"muted\">国产头部 Elo 1481~1500 vs 国外最高约 1525（同量级，差距 1.7%~3%）；"
+            "同档旗舰成本国产便宜 8.7~42 倍；国产全部官方直连、无合规风险。"
+            "参照仅展示、不参与路由（口径与来源见打分表「国内外对照」Sheet）。</p>"
+            "</div>"
+        )
+
     def _render_result(clf, rec) -> str:
         conf_tag = "（低置信）" if clf.low_confidence else ""
         cached_tag = "（缓存命中）" if clf.cached else ""
@@ -125,6 +154,7 @@ def _make_handler(cfg: RouterConfig, data: RouterData, classifier: Classifier):
             parts.append(_choice_row("备选", rec.backup))
         for n in rec.notice:
             parts.append(f"<p class=\"warn\">提示：{_html.escape(n)}</p>")
+        parts.append(_foreign_ref_section())
         return "".join(parts)
 
     def _registry_section() -> str:

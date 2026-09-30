@@ -28,6 +28,9 @@
 
 > 口径说明：国外旗舰未入 SuperCLUE 榜，能力分用 LMArena Elo 近似；综合成本 = 输入 × 0.6 + 输出 × 0.4（元/百万 tokens）；真实 API 实测留给开源社区。
 
+对比数据已作为**参考数据资产**融入 router（`data/foreign_comparison.csv`，仅展示、不参与路由排序）：
+CLI `cn-llm-router compare` 与 Web 面板推荐结果卡均附「国外主流模型参照」（ADR-0019）。
+
 ## 快速使用
 
 ```bash
@@ -83,6 +86,7 @@ for r in result.subtasks:
 pip install -e ".[dev]"   # 注册 cn-llm-router 命令；或 python -m cn_llm_router
 cn-llm-router classify "帮我写一个Python函数解析JSON"        # 任务分类
 cn-llm-router select --category 程序编码 --complexity 低 --no-availability-filter   # 模型推荐
+cn-llm-router compare --category 程序编码 --complexity 高 --no-availability-filter # 推荐 + 国外主流模型参照（Claude/GPT/Gemini/Grok）
 cn-llm-router route "用SQL统计每日订单量" --no-availability-filter                 # 分类+推荐+就绪客户端
 cn-llm-router list-models / list-categories / list-strategies                      # 数据与策略查看
 # 全部命令支持 --json（stdout 仅一份 JSON，可管道/脚本化）

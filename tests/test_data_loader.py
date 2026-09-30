@@ -42,3 +42,22 @@ def test_missing_price_model_allowed(data, caplog):
 def test_duplicate_keys_none(data):
     assert len({(k[0], k[1], k[2]) for k in data.scores}) == len(data.scores)
     assert len({(k[0], k[1]) for k in data.weights}) == len(data.weights)
+
+
+def test_foreign_models_loaded(data):
+    """ADR-0019：国内外对照模型加载（仅参考展示，不参与排序）。"""
+    assert len(data.foreign_models) == 11
+    foreign = [f for f in data.foreign_models if f.region == "国外"]
+    domestic = [f for f in data.foreign_models if f.region == "国内"]
+    assert len(foreign) == 5 and len(domestic) == 6
+    # 有来源的 Elo 保留数值，待补充留 None（禁止编造）
+    claude = next(f for f in foreign if "Claude" in f.model)
+    assert claude.lmarena_elo == 1525
+    astra = next(f for f in foreign if f.model == "GPT-6 Astra")
+    assert astra.lmarena_elo is None
+    # 综合成本口径 = 输入×0.6+输出×0.4（与 ADR-0001 一致）
+    assert abs(claude.cost - 187.2) < 1e-9
+    # 国内模型 Elo 全部留空（对照 Sheet 口径为待补充）
+    assert all(f.lmarena_elo is None for f in domestic)
+    # 来源可溯源
+    assert all(f.source_url for f in data.foreign_models)

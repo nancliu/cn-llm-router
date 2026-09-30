@@ -66,6 +66,8 @@ def test_post_route_returns_classification(base_url):
     assert "程序编码" in body          # 规则关键词兜底命中
     assert "主选" in body             # 推荐结果渲染
     assert "备选" in body
+    assert "国外主流模型参照" in body   # ADR-0019：推荐结果卡附国外参照
+    assert "Claude Fable 5.1" in body
 
 
 # 3. /cache 200 且含缓存配置字段

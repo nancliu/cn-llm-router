@@ -52,6 +52,34 @@ class CategoryDef:
 
 
 @dataclass
+class ForeignModel:
+    """国内外对照模型（ADR-0019）：来自 data/foreign_comparison.csv，仅作参考展示，不参与路由排序。
+
+    superclue_total 为字符串（分数或「未入榜」说明）；lmarena_elo 为有来源的数值或 None（待补充）。
+    """
+    vendor: str
+    model: str
+    region: str                       # 国内 / 国外
+    superclue_total: str
+    lmarena_elo: float | None
+    price_in: float | None
+    price_out: float | None
+    context_window: str
+    open_source: str
+    availability: str
+    source_url: str
+    note: str = ""
+    as_of: str = ""
+
+    @property
+    def cost(self) -> float | None:
+        """综合成本 = 输入×0.6 + 输出×0.4（元/百万 tokens，ADR-0001 同口径）；缺价返回 None。"""
+        if self.price_in is None or self.price_out is None:
+            return None
+        return self.price_in * 0.6 + self.price_out * 0.4
+
+
+@dataclass
 class RouterData:
     models: dict[str, ModelSpec] = field(default_factory=dict)          # logical_name → ModelSpec
     scores: dict[tuple[str, str, str], float] = field(default_factory=dict)  # (category, complexity, model) → score
@@ -66,6 +94,8 @@ class RouterData:
     # VLM 真实实测分（ADR-0015）：(category, complexity, model) → 0-100；
     # 仅"多模态理解"类有；文件不存在则空 dict（向后兼容）
     vlm_scores: dict[tuple[str, str, str], float] = field(default_factory=dict)
+    # 国内外对照模型（ADR-0019）：仅参考展示，不参与路由排序；文件不存在则空列表（向后兼容）
+    foreign_models: list[ForeignModel] = field(default_factory=list)
 
 
 def _read_csv(path: Path) -> list[dict]:
@@ -153,6 +183,34 @@ def load_data(data_dir: Path, weights_override: dict | None = None) -> RouterDat
             if not model or r.get("score") in (None, ""):
                 continue
             d.vlm_scores[(r["category"].strip(), r["complexity"].strip(), model)] = float(r["score"])
+
+    # foreign_models（ADR-0019，国内外对照，仅参考展示）：文件不存在则空列表（向后兼容）
+    fpath = data_dir / "foreign_comparison.csv"
+    if fpath.exists():
+        for r in _read_csv(fpath):
+            model = (r.get("model") or "").strip()
+            if not model:
+                continue
+
+            def _fopt(v: str) -> float | None:
+                s = (v or "").strip()
+                return float(s) if s else None
+
+            d.foreign_models.append(ForeignModel(
+                vendor=r.get("vendor", ""),
+                model=model,
+                region=(r.get("region") or "").strip(),
+                superclue_total=(r.get("superclue_total") or "").strip(),
+                lmarena_elo=_fopt(r.get("lmarena_elo")),
+                price_in=_fopt(r.get("price_in")),
+                price_out=_fopt(r.get("price_out")),
+                context_window=r.get("context_window", ""),
+                open_source=r.get("open_source", ""),
+                availability=r.get("availability", ""),
+                source_url=r.get("source_url", ""),
+                note=r.get("note", ""),
+                as_of=r.get("as_of", ""),
+            ))
 
     _validate(d)
     return d

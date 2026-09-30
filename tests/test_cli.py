@@ -39,6 +39,29 @@ def test_select_offline():
     assert "主选" in r.stdout
 
 
+def test_compare_text():
+    r = run_cli("compare", "--category", "程序编码", "--complexity", "高",
+                "--strategy", "平衡", "--no-availability-filter")
+    assert r.returncode == 0, r.stderr
+    assert "主选" in r.stdout
+    assert "国外主流模型参照" in r.stdout
+    assert "Claude Fable 5.1" in r.stdout
+    assert "GPT-6 Astra" in r.stdout
+    assert "结论" in r.stdout
+
+
+def test_compare_json():
+    r = run_cli("compare", "--json", "--category", "数据分析", "--complexity", "中",
+                "--strategy", "性价比优先", "--no-availability-filter")
+    assert r.returncode == 0, r.stderr
+    out = json.loads(r.stdout)
+    assert out["category"] == "数据分析"
+    assert out["recommendation"]["primary"]["logical_name"]
+    assert len(out["foreign_reference"]) == 5
+    assert all("cost" in f and "elo" in f for f in out["foreign_reference"])
+    assert "国产头部" in out["conclusion"]
+
+
 def test_select_no_key_raises_hint(monkeypatch):
     # 默认开可用性过滤、无 key → 报错并带 availability_filter 提示
     monkeypatch.delenv("VOLCENGINE_API_KEY", raising=False)

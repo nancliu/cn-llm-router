@@ -143,6 +143,53 @@ def _rec_to_dict(rec):
     }
 
 
+def cmd_compare(args, cfg, data):
+    """ADR-0019：推荐结果 + 国外主流模型参照（能力/成本/可用性），为使用国产模型提供信心。
+
+    参照仅展示、不参与路由排序；国外模型无 key 不可直连，真实 API 实测留社区。
+    """
+    from .selector import select as _select
+
+    rec = _select(data, args.category, args.complexity, strategy=args.strategy,
+                  availability_filter=False if args.no_availability_filter else None, cfg=cfg)
+    foreign = [f for f in data.foreign_models if f.region == "国外"]
+    refs = [
+        {
+            "vendor": f.vendor, "model": f.model, "elo": f.lmarena_elo,
+            "cost": f.cost, "context_window": f.context_window,
+            "open_source": f.open_source, "availability": f.availability,
+            "source_url": f.source_url,
+        }
+        for f in foreign
+    ]
+    conclusion = (
+        "国产头部 Elo 1481~1500 vs 国外最高约 1525（同量级，差距 1.7%~3%）；"
+        "同档旗舰成本国产便宜 8.7~42 倍（Qwen3.8-Max 21.6 元 vs GPT-6 Astra 187.2 元；"
+        "DeepSeek-V4.1 4.4 元 vs Claude Fable 187.2 元）；国产全部官方直连、无合规风险"
+        "（口径与来源见打分表「国内外对照」Sheet，数据日期 2026-09-30）"
+    )
+    if args.json:
+        _json_dump({"category": args.category, "complexity": args.complexity,
+                    "strategy": rec.strategy, "recommendation": _rec_to_dict(rec),
+                    "foreign_reference": refs, "conclusion": conclusion})
+        return
+    print(f"[{rec.strategy}] {args.category} / {args.complexity}")
+    print(f"主选: {rec.primary.logical_name}  厂商: {rec.primary.vendor}  能力分: {rec.primary.score}  成本: {rec.primary.cost}元/百万tok")
+    if rec.backup is not None:
+        print(f"备选: {rec.backup.logical_name}  厂商: {rec.backup.vendor}  能力分: {rec.backup.score}  成本: {rec.backup.cost}元/百万tok")
+    for n in rec.notice:
+        print(f"提示: {n}")
+    print()
+    print("国外主流模型参照（仅参考，不参与路由；真实实测留社区）:")
+    print(f"{'模型':<22}{'Elo':>6}   {'成本(元/百万tok)':<12}  {'可用性':<22}")
+    for r in refs:
+        elo = f"{r['elo']:.0f}" if r["elo"] is not None else "待补充"
+        cost = f"{r['cost']:.2f}" if r["cost"] is not None else "缺价"
+        print(f"{r['model']:<22}{elo:>6}   {cost:<12}  {r['availability']:<22}")
+    print()
+    print(f"结论: {conclusion}")
+
+
 def cmd_list_models(args, cfg, data):
     rows = [_model_summary(m) for m in data.models.values()]
     if args.json:
@@ -251,6 +298,12 @@ def main(argv=None):
     p.add_argument("--strategy", default="平衡", choices=["纯能力优先", "平衡", "性价比优先"])
     p.add_argument("--no-availability-filter", action="store_true", help="关闭可用性过滤（从全量集比较）")
 
+    p = sub.add_parser("compare", parents=[parent], help="模型推荐 + 国外主流参照（ADR-0019）")
+    p.add_argument("--category", required=True, help="12 类之一（cn-llm-router list-categories 查看）")
+    p.add_argument("--complexity", required=True, choices=["低", "中", "高"])
+    p.add_argument("--strategy", default="平衡", choices=["纯能力优先", "平衡", "性价比优先"])
+    p.add_argument("--no-availability-filter", action="store_true", help="关闭可用性过滤（从全量集比较）")
+
     p = sub.add_parser("route", parents=[parent], help="分类+推荐+就绪客户端")
     p.add_argument("prompt")
     p.add_argument("--strategy", default="平衡", choices=["纯能力优先", "平衡", "性价比优先"])
@@ -275,7 +328,8 @@ def main(argv=None):
     data = load_data(cfg.data_dir)
 
     handlers = {
-        "classify": cmd_classify, "select": cmd_select, "route": cmd_route,
+        "classify": cmd_classify, "select": cmd_select, "compare": cmd_compare,
+        "route": cmd_route,
         "list-models": cmd_list_models, "list-categories": cmd_list_categories,
         "list-strategies": cmd_list_strategies,
         "cache-status": cmd_cache_status, "cost-report": cmd_cost_report,

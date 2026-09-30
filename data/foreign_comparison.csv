@@ -1,0 +1,12 @@
+vendor,model,region,superclue_total,lmarena_elo,price_in,price_out,context_window,open_source,availability,source_url,note,as_of
+阿里巴巴,Qwen3.8-Max-0902,国内,72.62,,12.00,36.00,1M tokens (max output 131K),待核实,官方直连（阿里云百炼）,https://help.aliyun.com/en/model-studio/qwen3-8-max ; https://www.superclueai.com/generalpage,Elo 待补充（对照 Sheet 口径）,2026-09-30
+智谱 AI,GLM-5.3,国内,71.29,,8.00,28.00,1M tokens (仅文本),开源,官方直连（智谱AI）,https://bigmodel.cn/pricing ; https://www.superclueai.com/generalpage,Elo 待补充（对照 Sheet 口径）,2026-09-30
+深度求索 DeepSeek,DeepSeek-V4.1-Flash-CED,国内,71.81,,2.00,8.00,1M tokens (max output 384K),开源（MIT）,官方直连（DeepSeek官方）,https://api-docs.deepseek.com/zh-cn/quick_start/pricing/ ; https://www.superclueai.com/generalpage,Elo 待补充（对照 Sheet 口径）,2026-09-30
+月之暗面 Moonshot AI,Kimi-K3,国内,70.68,,20.00,100.00,1M tokens,开源（Kimi K3 License 近MIT）,官方直连（Kimi官方）,https://platform.kimi.com/ ; https://www.superclueai.com/generalpage,Elo 待补充（对照 Sheet 口径）,2026-09-30
+字节跳动,豆包Seed-2.1-Pro,国内,65.94,,6.00,30.00,待核实(256K vs 1024K),闭源,官方直连（火山方舟）,https://docs.volcengine.com/docs/82379/1544106 ; https://www.superclueai.com/generalpage,Elo 待补充（对照 Sheet 口径）,2026-09-30
+腾讯,腾讯混元Hy3,国内,62.13,,1.00,4.00,待补充,开源（Apache 2.0）,官方直连（腾讯云TokenHub）,https://cloud.tencent.com/document/product/1823/130055 ; https://www.superclueai.com/generalpage,Elo 待补充（对照 Sheet 口径）,2026-09-30
+Anthropic,Claude Fable 5.1,国外,未入榜（国际模型被排除）,1525,72.00,360.00,1M tokens,闭源,需代理（无大陆官方接入点）,https://www.anthropic.com/pricing ; https://platform.claude.com/docs/en/release-notes/overview,Elo 为 Fable 5 快照 2026-09-08,2026-09-30
+OpenAI,GPT-6 Astra,国外,未入榜（国际模型被排除）,,72.00,360.00,1.05M tokens,闭源,需代理（无大陆官方接入点）,https://help.openai.com/en/articles/11481834-chatgpt-rate-card-business-enterpriseedu-credit-based-pricing,Elo 待补充,2026-09-30
+OpenAI,GPT-6 Sol,国外,未入榜（国际模型被排除）,,14.40,72.00,1.05M tokens,闭源,需代理（无大陆官方接入点）,https://help.openai.com/en/articles/11481834-chatgpt-rate-card-business-enterpriseedu-credit-based-pricing,Elo 待补充；按≤272K档计价,2026-09-30
+Google,Gemini 3.1 Pro,国外,未入榜（国际模型被排除）,1505,14.40,86.40,1M tokens,闭源,需代理（无大陆官方接入点）,https://ai.google.dev/pricing ; https://ai.google.dev/gemini-api/docs/models,Elo 2026-09-08 快照；按≤200K档计价,2026-09-30
+xAI,Grok 4.7,国外,未入榜（国际模型被排除）,,14.40,43.20,500K tokens,闭源（专有）,需代理（无大陆官方接入点）,https://mem0.ai/blog/xai-grok-api-pricing,Elo 待补充（4.5=1499）；按<200K档计价,2026-09-30
