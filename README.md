@@ -12,6 +12,22 @@
 - ✅ 工具链：飞书打分表同步、分类在线评测（180 golden cases）、多模态实测、模型版本跟踪（ADR-0008）、社区评测叠加（ADR-0009）、CLI、PyPI 打包（wheel 已验证）、LiteLLM backend
 - ✅ 在线评测（2026-09-24，火山 coding-plan / 百炼 token-plan 实测，180 golden cases）：Qwen3.8-Max-0902 端到端 99.4% 为默认分类模型；DeepSeek-V4.1-Flash-CED 98.9% 且快约 6 倍（报告见 `reports/eval-20260924.json`）
 
+## 与国外主流模型对比
+
+为使用国产模型提供信心依据：国产头部（Qwen / GLM / DeepSeek / Kimi / 豆包 / 混元）与国外主流旗舰（Claude / GPT / Gemini / Grok）公开榜单 + 官方定价同口径对比（数据 as_of 2026-09-30，全部数字带来源 URL，详见打分表「国内外对照」Sheet 与对比报告）：
+
+| 维度 | 结论 |
+|---|---|
+| **能力** | 同量级：国产头部 Elo 1481~1500 vs 国外最高约 1525，差距 1.7%~3% |
+| **成本** | 便宜 **8.7~42 倍**：同档旗舰 Qwen3.8-Max 21.6 元 vs GPT-6 Astra 187.2 元（8.7×）；DeepSeek-V4.1 4.4 元 vs Claude Fable 187.2 元（42×） |
+| **可用性** | 国产全部官方直连、无合规风险；国外均无大陆官方接入点，需代理 |
+| **结论** | 通用文本 / 编码 / 数据分析等主流场景可放心使用国产头部；高复杂度前沿任务建议国产头部 + 社区实测验证 |
+
+- 飞书打分表「国内外对照」Sheet：https://feishu.doubao.com/sheets/Ku08sUbNHhtNggtaa82c99qYnwe
+- 对比报告（交互图表）：`reports/国内外大模型对比_20260930.html`
+
+> 口径说明：国外旗舰未入 SuperCLUE 榜，能力分用 LMArena Elo 近似；综合成本 = 输入 × 0.6 + 输出 × 0.4（元/百万 tokens）；真实 API 实测留给开源社区。
+
 ## 快速使用
 
 ```bash
