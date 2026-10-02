@@ -10,6 +10,7 @@
 - ✅ 路由层 v1（任务分类器 + 模型选择器 + OpenAI 兼容薄网关），101 个测试通过（Python 3.10/3.11/3.12，GitHub Actions CI）
 - ✅ Sub-Agent 多模型编排（ADR-0007）：一个任务拆多个子任务，每个独立判类选模型分配不同大模型
 - ✅ 工具链：飞书打分表同步、分类在线评测（180 golden cases）、多模态实测、模型版本跟踪（ADR-0008）、社区评测叠加（ADR-0009）、CLI、PyPI 打包（wheel 已验证）、LiteLLM backend
+- ✅ OpenAI 兼容 serve 网关（ADR-0021）：本地模型端点（默认 127.0.0.1:10041），透明转发不衰减，Codex / 任意 OpenAI 兼容客户端可直接接入（接入见 `docs/serve-guide.md`）
 - ✅ 在线评测（2026-09-30 分类规则回归修复后全量重跑，180 golden cases）：Qwen3.8-Max-0902 端到端 **100%（180/180）** 为默认分类模型；DeepSeek-V4.1-Flash-CED 98.9% 且快约 6 倍（ADR-0020，报告见 `reports/eval-qwen-fix-20260930.json`）
 
 ## 与国外主流模型对比
@@ -88,9 +89,12 @@ cn-llm-router classify "帮我写一个Python函数解析JSON"        # 任务�
 cn-llm-router select --category 程序编码 --complexity 低 --no-availability-filter   # 模型推荐
 cn-llm-router compare --category 程序编码 --complexity 高 --no-availability-filter # 推荐 + 国外主流模型参照（Claude/GPT/Gemini/Grok）
 cn-llm-router route "用SQL统计每日订单量" --no-availability-filter                 # 分类+推荐+就绪客户端
+cn-llm-router serve                                                              # 启动 OpenAI 兼容 serve 网关（ADR-0021）
 cn-llm-router list-models / list-categories / list-strategies                      # 数据与策略查看
 # 全部命令支持 --json（stdout 仅一份 JSON，可管道/脚本化）
 ```
+
+> **Codex 直接接入 serve**（零转换层）：`docs/serve-guide.md` 有 `config.toml` 配置示例——`model_provider.base_url` 指向 `http://127.0.0.1:10041/v1` 即可把 Codex 的模型全部路由到国产大模型（`model=auto` 判类路由或 `model=<logical_name>` 点名透传）。
 
 ## 工具链（scripts/）
 
@@ -114,6 +118,7 @@ cn-llm-router list-models / list-categories / list-strategies                   
 - `CONTEXT.md` — 项目上下文与词汇表
 - `docs/adr/` — 架构决策记录（0001 评分口径 / 0002 分类器 / 0003 网关 / 0004 数据源 / 0005 可用性过滤）
 - `docs/spec/router-v1.md` — 路由层 v1 规格
+- `docs/serve-guide.md` — OpenAI 兼容 serve 网关接入指南（Codex / 任意 OpenAI 兼容客户端，ADR-0021）
 - `docs/orchestrator-guide.md` — Sub-Agent 编排实战指南（Cursor / Claude Code / 豆包集成）
 - `docs/eval-setup.md` — 评测 key 清单与全量评测配置
 - `docs/contributing.md` — 参与开发（环境搭建 / ADR 流程 / 数据贡献规范）

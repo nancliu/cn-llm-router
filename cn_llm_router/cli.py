@@ -10,6 +10,7 @@
     cache-status               # 查看分类缓存配置（ADR-0012）
     cost-report                # 用量与成本月报（ADR-0011/0012）
     web                        # 启动本地面板（ADR-0017，仅监听 127.0.0.1）
+    serve                      # 启动 OpenAI 兼容 serve 网关（ADR-0021，harness/Codex 接入）
 
 classify / route 支持 --stats：临时开启本次使用统计记录（opt-in，默认关闭）。
 所有命令支持 --json 输出（stdout 仅一份 JSON；统计提示等诊断走 stderr）。
@@ -276,6 +277,14 @@ def cmd_web(args, cfg, data):
     run_server(host=args.host, port=args.port, config=cfg)
 
 
+def cmd_serve(args, cfg, data):
+    """ADR-0021：启动 OpenAI 兼容 serve 网关（harness/Codex 接入，透明转发不衰减）。"""
+    from .serve import run_server
+
+    run_server(host=args.host, port=args.port, config=cfg,
+               token=args.token or None, strategy=args.strategy)
+
+
 def main(argv=None):
     ap = argparse.ArgumentParser(prog="cn-llm-router", description="国内大模型选择器/路由器")
     ap.add_argument("--json", action="store_true", help="JSON 输出")
@@ -323,6 +332,13 @@ def main(argv=None):
     p.add_argument("--host", default="127.0.0.1", help="监听地址（默认 127.0.0.1，不建议改绑公网）")
     p.add_argument("--port", type=int, default=10040, help="监听端口（默认 10040）")
 
+    p = sub.add_parser("serve", parents=[parent], help="启动 OpenAI 兼容 serve 网关（ADR-0021，harness/Codex 接入）")
+    p.add_argument("--host", default="127.0.0.1", help="监听地址（默认 127.0.0.1，不建议改绑公网）")
+    p.add_argument("--port", type=int, default=10041, help="监听端口（默认 10041）")
+    p.add_argument("--token", default=None, help="Bearer token（缺省读 CN_LLM_ROUTER_SERVE_TOKEN）")
+    p.add_argument("--strategy", default="平衡", choices=["纯能力优先", "平衡", "性价比优先"],
+                   help="路由策略（默认 平衡）")
+
     args = ap.parse_args(argv)
     cfg = load_config(args.config_dir)
     data = load_data(cfg.data_dir)
@@ -333,7 +349,7 @@ def main(argv=None):
         "list-models": cmd_list_models, "list-categories": cmd_list_categories,
         "list-strategies": cmd_list_strategies,
         "cache-status": cmd_cache_status, "cost-report": cmd_cost_report,
-        "web": cmd_web,
+        "web": cmd_web, "serve": cmd_serve,
     }
     try:
         handlers[args.cmd](args, cfg, data)
