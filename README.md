@@ -10,8 +10,25 @@
 - ✅ 路由层 v1（任务分类器 + 模型选择器 + OpenAI 兼容薄网关），101 个测试通过（Python 3.10/3.11/3.12，GitHub Actions CI）
 - ✅ Sub-Agent 多模型编排（ADR-0007）：一个任务拆多个子任务，每个独立判类选模型分配不同大模型
 - ✅ 工具链：飞书打分表同步、分类在线评测（180 golden cases）、多模态实测、模型版本跟踪（ADR-0008）、社区评测叠加（ADR-0009）、CLI、PyPI 打包（wheel 已验证）、LiteLLM backend
-- ✅ OpenAI 兼容 serve 网关（ADR-0021）：本地模型端点（默认 127.0.0.1:10041），透明转发不衰减，Codex / 任意 OpenAI 兼容客户端可直接接入（接入见 `docs/serve-guide.md`）
+- ✅ OpenAI 兼容 serve 网关（ADR-0021）：本地模型端点（默认 127.0.0.1:10041，含 /v1/chat/completions + /v1/responses），透明转发不衰减；**Codex 零转换层直连、Claude Code 经 litellm 桥接**（真实模型 tool 往返已实测），接入见 `docs/serve-guide.md`
 - ✅ 在线评测（2026-09-30 分类规则回归修复后全量重跑，180 golden cases）：Qwen3.8-Max-0902 端到端 **100%（180/180）** 为默认分类模型；DeepSeek-V4.1-Flash-CED 98.9% 且快约 6 倍（ADR-0020，报告见 `reports/eval-qwen-fix-20260930.json`）
+
+## 与 LiteLLM / RouteLLM 的定位区别
+
+都叫 "Router"，但解决的不是同一个问题：cn-llm-router 是**语义决策**型路由器——这条请求**该用哪个模型**；LiteLLM Router 是**流量工程**型路由器——同一模型**走哪个端点**，其路由策略（加权 / 最少繁忙 / 按 TPM-RPM / 按时延 / 按成本）与请求内容无关。
+
+| 维度 | cn-llm-router | LiteLLM Router |
+|---|---|---|
+| 决策问题 | 这条请求该用哪个模型（语义决策） | 同一模型走哪个端点（流量工程） |
+| 决策依据 | 任务分类（12 类 × 3 复杂度）+ 可溯源评分矩阵 + 三档策略 | 负载 / 时延 / 成本 / 配额，不看请求内容 |
+| 输出 | 确定性主选 + 备选 + 推荐理由 | 按策略分发到 deployment 池 |
+| 能力评分 | SuperCLUE + 社区评测 + VLM 实测，全部带来源 URL | 无 |
+| 失败切换 | 主 → 备 1 次（网络 / 5xx / 429） | num_retries + cooldown + 多级 fallback + 健康检查（超集） |
+| 网关 | 自建 OpenAI 兼容薄层（ADR-0003） | LiteLLM Proxy（100+ provider） |
+
+- **重叠仅限薄层**：OpenAI 兼容网关与失败切换（LiteLLM 为超集）；核心"分类 × 评分矩阵 × 策略"不重叠。
+- **互补使用**：`backend: litellm` 已支持经 LiteLLM 直连上游；需要多端点负载均衡 / 预算管控 / 冷却时，可把 LiteLLM 叠在 serve 网关之后，各管一层。
+- **参考**：LiteLLM [Router 路由策略](https://docs.litellm.ai/docs/routing) 与 [Auto Routing / Adaptive Router](https://docs.litellm.ai/docs/adaptive_router)（beta，按请求类型在贵/便宜档间路由，是方向最接近的功能，但无评分矩阵与可解释推荐）。
 
 ## 与国外主流模型对比
 

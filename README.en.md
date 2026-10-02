@@ -14,6 +14,23 @@ A router for Chinese LLMs: it classifies a task into one of 12 categories and on
 - ✅ Tooling: Feishu score-sheet sync, online classifier eval (180 golden cases), multimodal runs, model version tracking (ADR-0008), community-score overlay (ADR-0009), CLI, PyPI packaging (wheel verified), LiteLLM backend
 - ✅ Online eval (2026-09-24, Volcengine coding-plan / Bailian token-plan, 180 golden cases): Qwen3.8-Max-0902 at 99.4% end-to-end is the default classifier; DeepSeek-V4.1-Flash-CED at 98.9% and ~6x faster (see `reports/eval-20260924.json`)
 
+## How this differs from LiteLLM / RouteLLM
+
+Both are called "routers", but they solve different problems: cn-llm-router is a **semantic-decision** router — *which model should handle this request*; the LiteLLM Router is a **traffic-engineering** router — *which endpoint should handle this (already chosen) model*. Its routing strategies (weighted / least-busy / TPM-RPM / latency / cost) are agnostic to request content.
+
+| Dimension | cn-llm-router | LiteLLM Router |
+|---|---|---|
+| Question it answers | Which model fits this request (semantic) | Which endpoint serves this model (traffic) |
+| Decision basis | Task classification (12 categories × 3 complexities) + traceable scoring matrix + 3 strategies | Load / latency / cost / quota; ignores request content |
+| Output | Deterministic primary + backup + reasoning | Distribution across a deployment pool by strategy |
+| Capability scoring | SuperCLUE + community evals + real VLM runs, every number with a source URL | None |
+| Failover | Primary → backup, 1 retry (network / 5xx / 429) | num_retries + cooldowns + multi-level fallbacks + health checks (superset) |
+| Gateway | Self-built thin OpenAI-compatible layer (ADR-0003) | LiteLLM Proxy (100+ providers) |
+
+- **Overlap is limited to a thin layer**: OpenAI-compatible gateway and failover (LiteLLM is a superset); the core "classification × scoring matrix × strategy" does not overlap.
+- **They compose**: `backend: litellm` already lets a provider connect through LiteLLM; when you need multi-endpoint load balancing / budget control / cooldowns, put LiteLLM behind the `serve` gateway — each layer does its own job.
+- **Reference**: LiteLLM [Router routing strategies](https://docs.litellm.ai/docs/routing) and [Auto Routing / Adaptive Router](https://docs.litellm.ai/docs/adaptive_router) (beta; routes between cheap/expensive tiers by request type — the closest feature direction, but without a scoring matrix or explainable recommendations).
+
 ## Quickstart
 
 ```bash

@@ -1,0 +1,65 @@
+{
+  "report": "Claude Code litellm 桥接实测（ADR-0021）",
+  "date": "2026-10-02",
+  "chain": "Claude Code(Anthropic /v1/messages) -> litellm proxy(:4000) -> cn-llm-router serve /v1/responses(:10041) -> 国产模型(OpenAI chat)",
+  "verification": {
+    "litellm_version": "1.103.2",
+    "serve_endpoint": "POST /v1/responses（Responses API 兼容，协议映射到 chat 透明转发）",
+    "serve_gateway": "127.0.0.1:10041",
+    "litellm_proxy": "127.0.0.1:4000 (master_key=sk-router-bridge)",
+    "models": ["router-auto (判类路由)", "router-qwen (点名 Qwen3.8-Max-0902)", "router-ced (点名 DeepSeek-V4.1-Flash-CED)"]
+  },
+  "roundtrip_test": {
+    "scenario": "get_weather 工具两轮往返：R1 期望 tool_use -> R2 回传 tool_result 期望最终文本",
+    "round1": {"expect": "tool_use", "actual": "tool_use (stop_reason=tool_use)"},
+    "round2": {"expect": "final_text", "actual": "end_turn + 基于工具结果的中文回答"},
+    "tool_use_id_roundtrip": true,
+    "conversion_errors": "无（Anthropic tool_use <-> Responses function_call <-> chat tool_calls 无损）"
+  },
+  "results": {
+    "router-auto": {
+      "status": "passed",
+      "elapsed_s": [7.69, 1.71],
+      "round1": "tool_use id=call_00_wpbiioti1c7d76ifej5nqkir name=get_weather input={city: 北京}",
+      "round2": "晴 22°C，建议防晒（完整工具结果作答）"
+    },
+    "router-ced": {
+      "status": "passed",
+      "elapsed_s": ["~8", 1.84],
+      "round1": "tool_use id=call_00_lcxru7v77kdxkmb7rdggedgh name=get_weather input={city: 北京}",
+      "round2": "晴 22°C，建议增减衣物（完整工具结果作答）"
+    },
+    "router-qwen": {
+      "status": "blocked_by_upstream",
+      "detail": "上游 403 AccessDenied.Unpurchased（百炼套餐未开通 Qwen3.8-Max-0902 模型访问，账户限制，非 router 缺陷）",
+      "note": "判类路由 router-auto 场景下 CED 可用；待百炼套餐开通 qwen3.8-max 后可复测"
+    }
+  },
+  "fixes_landed": [
+    "serve 新增 POST /v1/responses（Responses API 兼容：input items/instructions/tools -> chat 透明转发，输出组装 Responses message/function_call，流式 SSE 事件序列）",
+    "修复：tool_calls assistant 与相邻 assistant 文本合并（litellm 拆 tool_use 为独立 function_call item 导致严格上游 400）",
+    "修复：判类文本支持 content 数组消息（tool_result JSON 不再干扰类别判定）"
+  ],
+  "tests": {
+    "test_serve_responses.py": 8 cases (non-stream text / tool_calls output / input items roundtrip / stream events / stream text / merge consecutive / classify content array / unknown model)",
+    "full_suite": "172 passed"
+  },
+  "claude_code_usage": {
+    "env": {
+      "ANTHROPIC_BASE_URL": "http://127.0.0.1:4000",
+      "ANTHROPIC_AUTH_TOKEN": "sk-router-bridge",
+      "ANTHROPIC_MODEL": "router-auto (或 router-ced / router-qwen)",
+      "ANTHROPIC_SMALL_FAST_MODEL": "router-auto"
+    }
+  },
+  "limitations": [
+    "responses 端点内部聚合上游（非流式转发后组装 SSE 事件），首 token 延迟略增；后续可改边收边转",
+    "input_image 图片内容映射为 image_url 透传（未实测多模态场景）",
+    "litellm 1.103 对 Anthropic /v1/messages 默认走 OpenAI Responses API 上游（openai/ 前缀模型），因此 serve 需同时提供 /v1/responses"
+  ],
+  "next": [
+    "Claude Code 真实会话级联调（ANTHROPIC_* 环境变量指向 litellm proxy 后直接使用 claude 命令）",
+    "百炼开通 Qwen3.8-Max 后复测 router-qwen",
+    "发版 v0.3.0（serve + responses 端点）"
+  ]
+}

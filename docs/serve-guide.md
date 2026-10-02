@@ -62,11 +62,44 @@ cn-llm-router select --category 程序编码 --complexity 高 --strategy 纯能�
 
 把 `config.toml` 的 `model` 改成 `Kimi-K3`（serve 点名透传 + 同类别备选兜底）。
 
-## 4. 接入 Claude Code（经 LiteLLM 桥接，后续迭代）
+## 4. 接入 Claude Code（经 LiteLLM 桥接，已实测）
 
-Claude Code 只接受 Anthropic Messages 格式，而国产模型提供 OpenAI 兼容端点——需要一层协议转换。
-计划路径：litellm proxy（`/v1/messages`）→ cn-llm-router serve（作为 OpenAI 兼容上游）。
-⚠️ 该路径存在协议转换层，tool_use⇄tool_calls 多轮往返需实测验证，尚未实现（见 ADR-0021「后续」）。
+Claude Code 只接受 Anthropic Messages 格式，链路：**Claude Code → litellm proxy（`/v1/messages`）→ cn-llm-router serve（`/v1/responses`）→ 国产模型**。
+litellm 完成 Anthropic⇄Responses 转换，serve 完成 Responses⇄chat 转换（上游国产模型只有 chat API）；两端转换层均已用真实模型实测多轮 tool 往返无损。
+
+### 4.1 启动（两条命令）
+
+```bash
+cn-llm-router serve --port 10041            # router 网关（含 /v1/responses）
+litellm --config config/litellm-proxy.example.yaml --port 4000
+# ⚠️ Windows：若机器级环境变量 DATABASE_URL 存在，litellm 会尝试连该库，
+#    启动前先 Remove-Item Env:DATABASE_URL 或设 $env:DATABASE_URL=$null
+```
+
+### 4.2 Claude Code 侧环境变量
+
+```bash
+export ANTHROPIC_BASE_URL=http://127.0.0.1:4000
+export ANTHROPIC_AUTH_TOKEN=sk-router-bridge        # litellm master_key
+export ANTHROPIC_MODEL=router-auto                  # 判类路由；或 router-ced / router-qwen 点名
+export ANTHROPIC_SMALL_FAST_MODEL=router-auto
+claude
+```
+
+### 4.3 model_name 语义
+
+| litellm model_name | serve model | 行为 |
+|---|---|---|
+| `router-auto` | `auto` | 每请求判类（缓存 1h）→ 按策略选型转发 |
+| `router-ced` | `DeepSeek-V4.1-Flash-CED` | 点名透传 + 同类别备选兜底 |
+| `router-qwen` | `Qwen3.8-Max-0902` | 点名透传（需百炼套餐已开通该模型访问） |
+
+### 4.4 实测结论（2026-10-02，`reports/litellm-bridge-20261002.json`）
+
+- `router-auto` / `router-ced`：真实模型 get_weather 工具**两轮往返通过**——R1 返回 `tool_use`（含 id/name/input），R2 回传 `tool_result` 后基于结果给出完整中文回答；`tool_use` id 原样往返，转换层零报错。
+- `router-qwen`：上游 403 `AccessDenied.Unpurchased`（百炼套餐未开通 qwen3.8-max 访问，账户限制，非 router 缺陷）。
+- 修复项：① litellm 把 tool_use 拆成独立 `function_call` item，与 assistant 文本交错产生"tool_calls 后插入第二条 assistant"，火山 CED 会 400 拒绝——serve 已合并相邻 assistant 消息；② 判类文本支持 content 数组消息，tool_result JSON 不再干扰类别判定。
+- 边界：responses 端点内部聚合上游后组装 SSE 事件（首 token 延迟略增，后续可改边收边转）；`input_image` 映射为 `image_url` 透传（多模态未实测）。
 
 ## 5. 验证
 

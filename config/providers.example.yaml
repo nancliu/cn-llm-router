@@ -19,19 +19,19 @@
 #   百炼 token    https://token-plan.cn-beijing.maas.aliyuncs.com/compatible-mode/v1    （已实测）
 providers:
   GLM-5.3-Flash:
-    provider: zhipu
+    provider: zai
     base_url: https://open.bigmodel.cn/api/paas/v4
     api_model: glm-5.3-flash
     key_env: ZHIPU_API_KEY
     timeout: 60
   GLM-5.3:
-    provider: zhipu
+    provider: zai
     base_url: https://open.bigmodel.cn/api/paas/v4
     api_model: glm-5.3
     key_env: ZHIPU_API_KEY
     timeout: 60
   GLM-5.2:
-    provider: zhipu
+    provider: zai
     base_url: https://open.bigmodel.cn/api/paas/v4
     api_model: glm-5.2
     key_env: ZHIPU_API_KEY
@@ -55,7 +55,7 @@ providers:
     key_env: VOLCENGINE_API_KEY
     timeout: 60
   Qwen3.8-Max-0902:
-    provider: aliyun
+    provider: dashscope
     base_url: https://dashscope.aliyuncs.com/compatible-mode/v1
     api_model: qwen3.8-max-0902
     key_env: DASHSCOPE_API_KEY
