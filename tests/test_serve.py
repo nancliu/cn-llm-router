@@ -358,6 +358,26 @@ def test_responses_sse_text_delta(server):
     assert "response.completed" in raw
 
 
+def test_routes_endpoint_records_selection(server):
+    """/v1/routes：转发后返回最近路由决策（实际选中的模型/类别/复杂度）。"""
+    # 先清空历史（模块级 deque）
+    from cn_llm_router import serve as serve_mod
+    serve_mod._route_history.clear()
+    status, resp = _post(server, {
+        "model": "auto",
+        "messages": [{"role": "user", "content": "写一个 Python 函数解析 JSON"}],
+    })
+    assert status == 200
+    req = urllib.request.Request(server + "/v1/routes", method="GET")
+    with urllib.request.urlopen(req, timeout=15) as r:
+        routes = json.loads(r.read().decode("utf-8"))
+    assert routes["total"] >= 1
+    latest = routes["data"][0]
+    assert latest["model"] == "Qwen3.8-Max-0902"  # 唯一可用模型被选中
+    assert latest["category"] == "程序编码"
+    assert "api_model" in latest and "ts" in latest
+
+
 def test_models_and_health(server):
     status, resp = _get(server, "/v1/models")
     assert status == 200

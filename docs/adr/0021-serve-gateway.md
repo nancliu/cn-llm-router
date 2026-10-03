@@ -29,7 +29,9 @@ Claude Code 需 Anthropic Messages 格式，走 LiteLLM 桥接（本 ADR 不实�
 | 端点 | 语义 |
 |---|---|
 | `POST /v1/chat/completions` | 主入口：判类选型 + 透明转发 |
+| `POST /v1/responses` | Responses API（LiteLLM 桥接 Claude Code 的上游；协议映射到 chat 透明转发） |
 | `GET /v1/models` | 列出可路由模型（可用 logical_name + `auto`） |
+| `GET /v1/routes` | 最近路由决策（≤50 条，最新在前）：model/api_model/类别/复杂度/耗时/tokens（2026-10-03 增补） |
 | `GET /health` | 存活检查 |
 
 ### 路由模式（请求体 `model` 字段）
@@ -104,7 +106,9 @@ Anthropic 的 `input_json_delta`；缺失时 Claude Code 收到的 tool_use.inpu
   ③ model=auto 判类路由（规则兜底确定性）；
   ④ 点名模型缺 key → 400 missing_key；
   ⑤ /v1/models 与 /health；
-  ⑥ 认证 token 生效（401）。
+  ⑥ 认证 token 生效（401）；
+  ⑦ /v1/responses 流式含 function_call_arguments.delta（litellm 转 input_json_delta 依赖）；
+  ⑧ /v1/routes 记录最近路由决策（模型/类别/复杂度）。
 - 全量 pytest 无回归（不触碰 classify/select/route/gateway 行为）。
 
 ## 后续（不在本 ADR 范围）

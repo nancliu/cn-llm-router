@@ -37,6 +37,35 @@ cn-llm-router serve 网关已启动：http://127.0.0.1:10041/v1  （Ctrl+C 退�
 - 点名模型未配置 key → 400 `missing_key`；未知模型 → 400 `unknown_model`。
 - 上游最终失败 → 502 `upstream_failed`（含 `attempted` 列表）；网络/5xx/429/超时自动切备选，401 不重试。
 
+## 2.1 查看当前/最近选中的模型
+
+每次请求路由到哪个模型可通过两种方式实时查看：
+
+**① `GET /v1/routes`**（最近 50 条，最新在前）：
+
+```bash
+curl http://127.0.0.1:10041/v1/routes
+```
+
+```json
+{"object": "list", "total": 4, "data": [
+  {"ts": "2026-10-03 11:55:59", "category": "知识问答/检索", "complexity": "低",
+   "model": "DeepSeek-V4.1-Flash-CED", "api_model": "deepseek-v4.1-flash-ced",
+   "strategy": "平衡", "mode": "auto", "elapsed_s": 3.18, "tokens": 99060}
+]}
+```
+
+- `model` = 评分矩阵里的 logical_name；`api_model` = 上游实际调用的模型名；
+- `mode`：`auto`（判类路由）/ `named`（点名透传）；`status=failed` 时含 `error` 与 `attempted`。
+
+**② serve 控制台日志**（INFO 级，转发成功/失败都打印）：
+
+```text
+路由 2026-10-03 11:55:46|知识问答/检索|复杂度=低 → DeepSeek-V4.1-Flash-CED (api_model=deepseek-v4.1-flash-ced) 耗时=2.8s tokens=96655
+```
+
+Windows 下日志写在前台终端；后台运行可重定向到文件（`python -m cn_llm_router serve > serve.log 2>&1`）。
+
 ## 3. 接入 Codex（推荐，零转换层）
 
 Codex 原生使用 OpenAI Chat 格式，`config.toml` 支持自定义 `model_provider`，**无需任何协议转换**：

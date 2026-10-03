@@ -25,6 +25,7 @@ import socket
 import subprocess
 import time
 import uuid
+from collections import deque
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from typing import Optional
 
@@ -40,6 +41,10 @@ logger = logging.getLogger("cn_llm_router.serve")
 DEFAULT_PORT = 10041
 ENV_TOKEN = "CN_LLM_ROUTER_SERVE_TOKEN"
 AUTO_MODEL = "auto"
+ROUTE_LOG_MAXLEN = 50  # /v1/routes 内存路由历史条数
+
+# 最近路由决策（供 GET /v1/routes 查询"当前/最近选了什么模型"）
+_route_history: deque = deque(maxlen=ROUTE_LOG_MAXLEN)
 
 
 # ---------------------------------------------------------------- 实例检测/重启
@@ -278,11 +283,23 @@ def _make_handler(cfg: RouterConfig, data: RouterData, classifier: Classifier,
                                    primary=named, backup=backup), clf
 
         # ---------- 转发（透明：tools/stream/参数原样，model 由上游 api_model 覆盖） ----------
-        def _forward_raw(self, rec: Recommendation, kwargs: dict, stream: bool):
+        def _record_route(self, entry: dict) -> None:
+            """记录一次路由决策（内存历史 + INFO 日志），供 /v1/routes 与日志查看。"""
+            entry = {k: v for k, v in entry.items() if v is not None}
+            _route_history.appendleft(entry)
+            logger.info("路由 %s|%s|复杂度=%s → %s (api_model=%s) 耗时=%.1fs tokens=%s",
+                        entry.get("ts", ""), entry.get("category", "?"),
+                        entry.get("complexity", "?"), entry.get("model", "?"),
+                        entry.get("api_model", "?"), entry.get("elapsed_s", 0.0),
+                        entry.get("tokens", "-"))
+
+        def _forward_raw(self, rec: Recommendation, kwargs: dict, stream: bool,
+                         category: str = "", complexity: str = ""):
             """按主选→备选链转发，返回上游响应对象（失败抛 ServeError 502）。"""
             chain = [rec.primary] + ([rec.backup] if rec.backup else [])
             attempted: list[str] = []
             last_err: Optional[Exception] = None
+            t0 = time.time()
             for choice in chain:
                 prov = cfg.providers.get(choice.logical_name)
                 if prov is None:
@@ -297,6 +314,19 @@ def _make_handler(cfg: RouterConfig, data: RouterData, classifier: Classifier,
                 attempted.append(choice.logical_name)
                 try:
                     resp = client.chat.completions.create(**kw)
+                    usage = None
+                    try:
+                        usage = resp.usage.model_dump() if resp.usage else None
+                    except Exception:
+                        pass
+                    self._record_route({
+                        "ts": time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(t0)),
+                        "category": category, "complexity": complexity,
+                        "model": choice.logical_name, "api_model": prov.api_model,
+                        "strategy": strategy, "mode": "auto" if category else "named",
+                        "elapsed_s": round(time.time() - t0, 2),
+                        "tokens": usage.get("total_tokens") if isinstance(usage, dict) else None,
+                    })
                     return resp
                 except Exception as e:  # noqa: BLE001 —— 按类型判定是否可切
                     last_err = e
@@ -304,6 +334,13 @@ def _make_handler(cfg: RouterConfig, data: RouterData, classifier: Classifier,
                         break
                     logger.info("serve 模型 %s 调用失败，切备选: %s", choice.logical_name, e)
                     continue
+            self._record_route({
+                "ts": time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(t0)),
+                "category": category, "complexity": complexity,
+                "model": "|".join(attempted) or rec.primary.logical_name,
+                "status": "failed", "error": type(last_err).__name__,
+                "elapsed_s": round(time.time() - t0, 2),
+            })
             raise ServeError(502, f"上游模型调用最终失败: {type(last_err).__name__}: {last_err}",
                              code="upstream_failed", attempted=attempted)
 
@@ -534,7 +571,9 @@ def _make_handler(cfg: RouterConfig, data: RouterData, classifier: Classifier,
                     kwargs[k] = body[k]
             if body.get("max_output_tokens"):
                 kwargs["max_tokens"] = body["max_output_tokens"]
-            chat = self._forward_raw(rec, kwargs, stream=False)
+            chat = self._forward_raw(rec, kwargs, stream=False,
+                                     category=getattr(_clf, "category", ""),
+                                     complexity=getattr(_clf, "complexity", ""))
             resp = self._chat_to_responses(chat.model_dump(), str(model_arg))
             if stream:
                 self._send_responses_sse(resp)
@@ -558,6 +597,12 @@ def _make_handler(cfg: RouterConfig, data: RouterData, classifier: Classifier,
                 self._send_json(200, {"object": "list", "data": [
                     {"id": m, "object": "model", "owned_by": "cn-llm-router"} for m in models
                 ]})
+                return
+            if path == "/v1/routes":
+                # 最近路由决策（最新在前）：查看 router 实际选了什么模型
+                self._send_json(200, {"object": "list",
+                                      "data": list(_route_history),
+                                      "total": len(_route_history)})
                 return
             self._send_openai_error(ServeError(404, f"未知路径 {path}", code="not_found"))
 
@@ -591,7 +636,9 @@ def _make_handler(cfg: RouterConfig, data: RouterData, classifier: Classifier,
                 rec, clf = self._recommendation(str(model_arg), text)
                 kwargs = dict(body)
                 kwargs.pop("model", None)
-                resp = self._forward_raw(rec, kwargs, stream)
+                resp = self._forward_raw(rec, kwargs, stream,
+                                         category=getattr(clf, "category", ""),
+                                         complexity=getattr(clf, "complexity", ""))
                 self._write_completion(resp, stream)
             except ServeError as e:
                 self._send_openai_error(e)
@@ -626,6 +673,8 @@ def run_server(host: str = "127.0.0.1", port: int = DEFAULT_PORT,
     自动关闭旧实例再启动新实例（避免多实例抢端口导致路由混乱）。
     端口被其他程序占用时直接报错退出，不自动处理。
     """
+    logging.basicConfig(level=logging.INFO,
+                        format="%(asctime)s %(levelname)s %(name)s %(message)s")
     handler_cls, cfg, data, classifier = create_app(config, token=token, strategy=strategy)
     _restart_existing_if_needed(host, port, restart_existing)
     httpd = ThreadingHTTPServer((host, port), handler_cls)
