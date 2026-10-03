@@ -282,7 +282,8 @@ def cmd_serve(args, cfg, data):
     from .serve import run_server
 
     run_server(host=args.host, port=args.port, config=cfg,
-               token=args.token or None, strategy=args.strategy)
+               token=args.token or None, strategy=args.strategy,
+               restart_existing=not args.no_restart)
 
 
 def main(argv=None):
@@ -338,6 +339,8 @@ def main(argv=None):
     p.add_argument("--token", default=None, help="Bearer token（缺省读 CN_LLM_ROUTER_SERVE_TOKEN）")
     p.add_argument("--strategy", default="平衡", choices=["纯能力优先", "平衡", "性价比优先"],
                    help="路由策略（默认 平衡）")
+    p.add_argument("--no-restart", action="store_true",
+                   help="端口已有本应用 serve 实例时不自动重启（默认自动关闭旧实例并启动新实例）")
 
     args = ap.parse_args(argv)
     cfg = load_config(args.config_dir)

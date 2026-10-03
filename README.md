@@ -107,7 +107,7 @@ cn-llm-router classify "帮我写一个Python函数解析JSON"        # 任务�
 cn-llm-router select --category 程序编码 --complexity 低 --no-availability-filter   # 模型推荐
 cn-llm-router compare --category 程序编码 --complexity 高 --no-availability-filter # 推荐 + 国外主流模型参照（Claude/GPT/Gemini/Grok）
 cn-llm-router route "用SQL统计每日订单量" --no-availability-filter                 # 分类+推荐+就绪客户端
-cn-llm-router serve --port 10041 --strategy 平衡 --token my-secret                 # OpenAI 兼容 serve 网关（ADR-0021）
+cn-llm-router serve --port 10041 --strategy 平衡 --token my-secret                 # OpenAI 兼容 serve 网关（ADR-0021；默认单实例守护：端口已有本应用实例时自动关旧启新，--no-restart 关闭）
 cn-llm-router list-models / list-categories / list-strategies                      # 数据与策略查看
 # 全部命令支持 --json（stdout 仅一份 JSON，可管道/脚本化）
 ```

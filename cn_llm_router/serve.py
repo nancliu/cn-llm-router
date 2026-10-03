@@ -20,6 +20,9 @@ from __future__ import annotations
 import json
 import logging
 import os
+import re
+import socket
+import subprocess
 import time
 import uuid
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
@@ -37,6 +40,120 @@ logger = logging.getLogger("cn_llm_router.serve")
 DEFAULT_PORT = 10041
 ENV_TOKEN = "CN_LLM_ROUTER_SERVE_TOKEN"
 AUTO_MODEL = "auto"
+
+
+# ---------------------------------------------------------------- 实例检测/重启
+def _port_in_use(host: str, port: int) -> bool:
+    """探测端口是否已被占用（bind 测试，不产生监听副作用）。"""
+    s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    try:
+        s.bind((host, port))
+        return False
+    except OSError:
+        return True
+    finally:
+        s.close()
+
+
+def _find_pid_on_port(port: int) -> Optional[int]:
+    """通过 netstat 找到监听该端口的进程 PID（仅 TCP LISTENING）。"""
+    if os.name == "nt":
+        try:
+            out = subprocess.run(
+                ["netstat", "-ano", "-p", "tcp"], capture_output=True,
+                text=True, timeout=15,
+            ).stdout
+        except Exception:
+            return None
+        for line in out.splitlines():
+            if "LISTENING" not in line:
+                continue
+            parts = line.split()
+            if len(parts) >= 5 and parts[1].endswith(f":{port}"):
+                try:
+                    return int(parts[-1])
+                except ValueError:
+                    continue
+    return None
+
+
+def _is_router_process(pid: int) -> bool:
+    """判断进程命令行是否为本应用的 serve 实例（cn_llm_router serve）。"""
+    cmdline = ""
+    if os.name == "nt":
+        try:
+            out = subprocess.run(
+                ["powershell", "-NoProfile", "-Command",
+                 f"(Get-CimInstance Win32_Process -Filter 'ProcessId={pid}').CommandLine"],
+                capture_output=True, text=True, timeout=15,
+            )
+            cmdline = (out.stdout or "") + (out.stderr or "")
+        except Exception:
+            return False
+    else:
+        try:
+            out = subprocess.run(
+                ["ps", "-p", str(pid), "-o", "command="],
+                capture_output=True, text=True, timeout=15,
+            )
+            cmdline = out.stdout or ""
+        except Exception:
+            return False
+    return bool(re.search(r"cn[_-]llm[_-]router.*serve", cmdline, re.IGNORECASE))
+
+
+def _kill_pid(pid: int) -> bool:
+    """终止进程（Windows taskkill /F；POSIX SIGTERM）。"""
+    if os.name == "nt":
+        try:
+            r = subprocess.run(
+                ["taskkill", "/F", "/PID", str(pid)],
+                capture_output=True, text=True, timeout=15,
+            )
+            return r.returncode == 0
+        except Exception:
+            return False
+    try:
+        os.kill(pid, 15)  # SIGTERM
+        return True
+    except OSError:
+        return False
+
+
+def _restart_existing_if_needed(host: str, port: int, restart: bool) -> None:
+    """启动前检查：若端口已被本应用 serve 实例占用，自动关闭旧实例后重启。
+
+    - 端口空闲 → 正常启动。
+    - 端口被**本应用** serve 占用 → 关闭旧实例（restart=False 时跳过并继续，
+      由后续 bind 失败自然报错），等待端口释放后由调用方启动新实例。
+    - 端口被**其他程序**占用 → 直接 SystemExit 报错，不自动处理。
+    """
+    if not _port_in_use(host, port):
+        return
+    pid = _find_pid_on_port(port)
+    if pid is None:
+        raise SystemExit(
+            f"端口 {host}:{port} 已被占用，但未能识别占用进程，请先释放端口或改用 --port"
+        )
+    if _is_router_process(pid):
+        if not restart:
+            print(f"检测到已有 cn-llm-router serve 实例（PID {pid}）监听 {host}:{port}，"
+                  f"--no-restart 已指定，跳过自动重启")
+            return
+        print(f"检测到已有 cn-llm-router serve 实例（PID {pid}）监听 {host}:{port}，"
+              f"自动关闭旧实例后重启…")
+        if not _kill_pid(pid):
+            raise SystemExit(f"关闭旧 serve 实例（PID {pid}）失败，请手动停止后重试")
+        # 等待端口释放（Windows taskkill 异步，最多 5s）
+        for _ in range(50):
+            if not _port_in_use(host, port):
+                break
+            time.sleep(0.1)
+        return
+    raise SystemExit(
+        f"端口 {host}:{port} 已被其他进程（PID {pid}）占用，为避免误杀未自动处理；"
+        f"请释放端口或改用 --port"
+    )
 
 
 class ServeError(Exception):
@@ -490,9 +607,15 @@ def create_app(config: RouterConfig | None = None, *, token: Optional[str] = Non
 
 def run_server(host: str = "127.0.0.1", port: int = DEFAULT_PORT,
                config: RouterConfig | None = None, *, token: Optional[str] = None,
-               strategy: str = "平衡") -> None:
-    """启动 OpenAI 兼容 serve 网关（仅监听 127.0.0.1，不暴露公网）。"""
+               strategy: str = "平衡", restart_existing: bool = True) -> None:
+    """启动 OpenAI 兼容 serve 网关（仅监听 127.0.0.1，不暴露公网）。
+
+    restart_existing=True（默认）：若目标端口已被**本应用的 serve 实例**占用，
+    自动关闭旧实例再启动新实例（避免多实例抢端口导致路由混乱）。
+    端口被其他程序占用时直接报错退出，不自动处理。
+    """
     handler_cls, cfg, data, classifier = create_app(config, token=token, strategy=strategy)
+    _restart_existing_if_needed(host, port, restart_existing)
     httpd = ThreadingHTTPServer((host, port), handler_cls)
     httpd.daemon_threads = True
     print(f"cn-llm-router serve 网关已启动：http://{host}:{port}/v1  （Ctrl+C 退出）")

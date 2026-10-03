@@ -11,6 +11,16 @@ LiteLLM 桥接（Claude Code）作为模型上游消费。核心承诺（ADR-002
 cn-llm-router serve                      # 默认 127.0.0.1:10041
 cn-llm-router serve --port 10041 --strategy 纯能力优先
 cn-llm-router serve --token my-secret    # 启用认证（或环境变量 CN_LLM_ROUTER_SERVE_TOKEN）
+cn-llm-router serve --no-restart         # 端口已有本应用实例时不自动重启（默认自动关旧启新）
+```
+
+**单实例守护（默认开启）**：启动前自动检查目标端口——若已被**本应用 serve 实例**占用
+（如重复启动、上一会话残留），自动关闭旧实例再启动新实例，避免多实例抢端口导致路由混乱；
+若端口被**其他程序**占用则直接报错退出，不自动处理。日志示例：
+
+```text
+检测到已有 cn-llm-router serve 实例（PID 36036）监听 127.0.0.1:10041，自动关闭旧实例后重启…
+cn-llm-router serve 网关已启动：http://127.0.0.1:10041/v1  （Ctrl+C 退出）
 ```
 
 前置：`config/providers.yaml` 已配置目标模型端点 + 对应 API key（见 `docs/eval-setup.md` / `.env.example`）。

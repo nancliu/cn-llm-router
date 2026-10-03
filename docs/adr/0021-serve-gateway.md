@@ -56,6 +56,19 @@ Claude Code 需 Anthropic Messages 格式，走 LiteLLM 桥接（本 ADR 不实�
 - 可选 token：环境变量 `CN_LLM_ROUTER_SERVE_TOKEN` 或 CLI `--token`；设置后要求
   `Authorization: Bearer <token>` 或 `X-API-Key: <token>`，否则 401。
 
+### 单实例守护（2026-10-03 增补）
+
+多实例抢同一端口会造成路由混乱（曾出现双 serve / 双 litellm 并存）。
+`run_server` 启动前自动检测：
+
+- 端口空闲 → 正常启动；
+- 端口被**本应用 serve 实例**占用（netstat 找 PID → 进程命令行匹配
+  `cn_llm_router serve` / `cn-llm-router serve`）→ **自动关闭旧实例再启动新实例**；
+- 端口被**其他程序**占用 → 直接报错退出，不自动处理（避免误杀）；
+- CLI 新增 `--no-restart` 关闭自动重启。
+
+检测基于标准库（socket bind 探测 + netstat/tasklist + PowerShell CIM），无新依赖。
+
 ### 判类输入提取
 
 取请求 messages 中**最后一条 role=user 且 content 为字符串**的消息做判类（跳过 tool 消息），
@@ -65,7 +78,7 @@ Claude Code 需 Anthropic Messages 格式，走 LiteLLM 桥接（本 ADR 不实�
 
 - `serve` 复用 `Classifier`（判类）、`selector.select`（选型）、`RouterClient`（转发 + failover）、
   `load_config/load_data`（配置与数据）——**不修改任何现有模块行为**；
-- CLI 新增 `cn-llm-router serve --host --port --token [--strategy 平衡]`；
+- CLI 新增 `cn-llm-router serve --host --port --token [--strategy 平衡] [--no-restart]`；
 - 与 ADR-0017 Web 面板（/route 推荐查询）互补：面板给人看推荐，serve 给 harness 发请求。
 
 ## 验证
