@@ -7,7 +7,7 @@
 ## 状态
 
 - ✅ 打分表 v1-20260923（12 任务类别 × 3 复杂度 × 15 模型，含三档性价比策略：纯能力优先 / 平衡 / 性价比优先）
-- ✅ 路由层 v1（任务分类器 + 模型选择器 + OpenAI 兼容薄网关），101 个测试通过（Python 3.10/3.11/3.12，GitHub Actions CI）
+- ✅ 路由层 v1（任务分类器 + 模型选择器 + OpenAI 兼容薄网关），172 个测试通过（Python 3.10/3.11/3.12，GitHub Actions CI）
 - ✅ Sub-Agent 多模型编排（ADR-0007）：一个任务拆多个子任务，每个独立判类选模型分配不同大模型
 - ✅ 工具链：飞书打分表同步、分类在线评测（180 golden cases）、多模态实测、模型版本跟踪（ADR-0008）、社区评测叠加（ADR-0009）、CLI、PyPI 打包（wheel 已验证）、LiteLLM backend
 - ✅ OpenAI 兼容 serve 网关（ADR-0021）：本地模型端点（默认 127.0.0.1:10041，含 /v1/chat/completions + /v1/responses），透明转发不衰减；**Codex 零转换层直连、Claude Code 经 litellm 桥接**（真实模型 tool 往返已实测），接入见 `docs/serve-guide.md`
@@ -52,7 +52,8 @@ CLI `cn-llm-router compare` 与 Web 面板推荐结果卡均附「国外主流�
 ## 快速使用
 
 ```bash
-pip install -e ".[dev]"
+pip install cn-llm-router                 # PyPI 安装（v0.3.0）
+# 开发安装：pip install -e ".[dev]"
 # 离线可用（无需 key）：分类 + 推荐（availability_filter=False 从全量集比较）
 python - <<'PY'
 from cn_llm_router import classify, select, route
@@ -101,17 +102,19 @@ for r in result.subtasks:
 ## CLI
 
 ```bash
-pip install -e ".[dev]"   # 注册 cn-llm-router 命令；或 python -m cn_llm_router
+pip install cn-llm-router            # 或开发安装 pip install -e ".[dev]"（注册 cn-llm-router 命令）
 cn-llm-router classify "帮我写一个Python函数解析JSON"        # 任务分类
 cn-llm-router select --category 程序编码 --complexity 低 --no-availability-filter   # 模型推荐
 cn-llm-router compare --category 程序编码 --complexity 高 --no-availability-filter # 推荐 + 国外主流模型参照（Claude/GPT/Gemini/Grok）
 cn-llm-router route "用SQL统计每日订单量" --no-availability-filter                 # 分类+推荐+就绪客户端
-cn-llm-router serve                                                              # 启动 OpenAI 兼容 serve 网关（ADR-0021）
+cn-llm-router serve --port 10041 --strategy 平衡 --token my-secret                 # OpenAI 兼容 serve 网关（ADR-0021）
 cn-llm-router list-models / list-categories / list-strategies                      # 数据与策略查看
 # 全部命令支持 --json（stdout 仅一份 JSON，可管道/脚本化）
 ```
 
-> **Codex 直接接入 serve**（零转换层）：`docs/serve-guide.md` 有 `config.toml` 配置示例——`model_provider.base_url` 指向 `http://127.0.0.1:10041/v1` 即可把 Codex 的模型全部路由到国产大模型（`model=auto` 判类路由或 `model=<logical_name>` 点名透传）。
+> **harness 接入（能力不变弱，透明转发铁律 ADR-0021）**：
+> - **Codex**（零转换层直连）：`docs/serve-guide.md` 第 3 节 `config.toml` 示例——`model_provider.base_url` 指向 `http://127.0.0.1:10041/v1`，`model=auto` 判类路由或 `model=<logical_name>` 点名透传。
+> - **Claude Code**（经 litellm 桥接）：serve 同时提供 `/v1/responses`，`docs/serve-guide.md` 第 4 节 + `config/litellm-proxy.example.yaml` 一条命令启动 litellm proxy 即可，真实模型多轮 tool 往返已实测。
 
 ## 工具链（scripts/）
 
@@ -133,9 +136,9 @@ cn-llm-router list-models / list-categories / list-strategies                   
 ## 文档
 
 - `CONTEXT.md` — 项目上下文与词汇表
-- `docs/adr/` — 架构决策记录（0001 评分口径 / 0002 分类器 / 0003 网关 / 0004 数据源 / 0005 可用性过滤）
+- `docs/adr/` — 架构决策记录（0001 评分口径 … 0021 serve 网关透明转发铁律）
 - `docs/spec/router-v1.md` — 路由层 v1 规格
-- `docs/serve-guide.md` — OpenAI 兼容 serve 网关接入指南（Codex / 任意 OpenAI 兼容客户端，ADR-0021）
+- `docs/serve-guide.md` — OpenAI 兼容 serve 网关接入指南（Codex 零转换直连 / Claude Code 经 litellm 桥接，ADR-0021）
 - `docs/orchestrator-guide.md` — Sub-Agent 编排实战指南（Cursor / Claude Code / 豆包集成）
 - `docs/eval-setup.md` — 评测 key 清单与全量评测配置
 - `docs/contributing.md` — 参与开发（环境搭建 / ADR 流程 / 数据贡献规范）

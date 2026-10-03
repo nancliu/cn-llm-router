@@ -9,10 +9,11 @@ A router for Chinese LLMs: it classifies a task into one of 12 categories and on
 ## Status
 
 - ✅ Scoring table v1-20260923 (12 categories × 3 complexities × 15 models; three cost-performance strategies: Capability-first / Balanced / Cost-performance)
-- ✅ Routing layer v1 (task classifier + model selector + thin OpenAI-compatible gateway), 100+ tests passing (Python 3.10/3.11/3.12 via GitHub Actions CI)
+- ✅ Routing layer v1 (task classifier + model selector + thin OpenAI-compatible gateway), 172 tests passing (Python 3.10/3.11/3.12 via GitHub Actions CI)
 - ✅ Sub-Agent multi-model orchestration (ADR-0007): split one task into subtasks, each classified and routed independently to a different model
-- ✅ Tooling: Feishu score-sheet sync, online classifier eval (180 golden cases), multimodal runs, model version tracking (ADR-0008), community-score overlay (ADR-0009), CLI, PyPI packaging (wheel verified), LiteLLM backend
-- ✅ Online eval (2026-09-24, Volcengine coding-plan / Bailian token-plan, 180 golden cases): Qwen3.8-Max-0902 at 99.4% end-to-end is the default classifier; DeepSeek-V4.1-Flash-CED at 98.9% and ~6x faster (see `reports/eval-20260924.json`)
+- ✅ Tooling: Feishu score-sheet sync, online classifier eval (180 golden cases), multimodal runs, model version tracking (ADR-0008), community-score overlay (ADR-0009), CLI, PyPI packaging (v0.3.0 published), LiteLLM backend
+- ✅ OpenAI-compatible serve gateway (ADR-0021): local model endpoint (default 127.0.0.1:10041, `/v1/chat/completions` + `/v1/responses`), transparent passthrough; **Codex connects with zero translation, Claude Code via litellm bridge** (real-model tool round-trips verified). See `docs/serve-guide.md`
+- ✅ Online eval (2026-09-30, regression fix re-run, 180 golden cases): Qwen3.8-Max-0902 at **100% (180/180)** end-to-end is the default classifier; DeepSeek-V4.1-Flash-CED at 98.9% and ~6x faster (ADR-0020, see `reports/eval-qwen-fix-20260930.json`)
 
 ## How this differs from LiteLLM / RouteLLM
 
@@ -34,7 +35,7 @@ Both are called "routers", but they solve different problems: cn-llm-router is a
 ## Quickstart
 
 ```bash
-pip install -e ".[dev]"
+pip install cn-llm-router                 # from PyPI (v0.3.0); dev install: pip install -e ".[dev]"
 # Works offline (no key needed): classify + recommend (availability_filter=False compares the full set)
 python - <<'PY'
 from cn_llm_router import classify, select, route
@@ -83,13 +84,19 @@ Zero-key offline demo: `python examples/orchestrate_demo.py` (rule-based classif
 ## CLI
 
 ```bash
-pip install -e ".[dev]"   # registers the cn-llm-router command; or python -m cn_llm_router
+pip install cn-llm-router            # or dev install pip install -e ".[dev]" (registers the cn-llm-router command)
 cn-llm-router classify "帮我写一个Python函数解析JSON"        # classify a task
 cn-llm-router select --category 程序编码 --complexity 低 --no-availability-filter   # recommend a model
+cn-llm-router compare --category 程序编码 --complexity 高 --no-availability-filter # recommend + foreign-model reference (Claude/GPT/Gemini/Grok)
 cn-llm-router route "用SQL统计每日订单量" --no-availability-filter                 # classify + recommend + ready client
+cn-llm-router serve --port 10041 --strategy 平衡 --token my-secret                 # OpenAI-compatible serve gateway (ADR-0021)
 cn-llm-router list-models / list-categories / list-strategies                      # inspect data & strategies
 # All commands support --json (a single JSON document on stdout, pipe/script friendly)
 ```
+
+> **Harness integration (capability preserved, transparent passthrough ADR-0021)**:
+> - **Codex** (zero translation): `docs/serve-guide.md` §3 — point `model_provider.base_url` at `http://127.0.0.1:10041/v1`; `model=auto` for per-request routing or `model=<logical_name>` for pinned passthrough.
+> - **Claude Code** (via litellm bridge): serve also exposes `/v1/responses`; start the litellm proxy per `docs/serve-guide.md` §4 / `config/litellm-proxy.example.yaml`, real-model multi-round tool loops verified.
 
 ## Tooling (scripts/)
 
@@ -115,8 +122,9 @@ See [docs/contributing.md](docs/contributing.md) (Chinese): dev setup, ADR workf
 ## Docs
 
 - `CONTEXT.md` — project context & glossary
-- `docs/adr/` — Architecture Decision Records (0001 scoring policy / 0002 classifier / 0003 gateway / 0004 data source / 0005 availability filter)
+- `docs/adr/` — Architecture Decision Records (0001 scoring policy … 0021 serve gateway transparent-passthrough rule)
 - `docs/spec/router-v1.md` — routing layer v1 spec
+- `docs/serve-guide.md` — serve gateway integration guide (Codex zero-translation / Claude Code via litellm, ADR-0021)
 - `docs/agents/` — agent working conventions (issue tracker / triage / domain)
 
 ## License
