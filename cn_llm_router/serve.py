@@ -485,6 +485,18 @@ def _make_handler(cfg: RouterConfig, data: RouterData, classifier: Classifier,
                         self.wfile.write(ev("response.content_part.done", item_id=item["id"],
                                             output_index=i, content_index=0, part=part))
                         self.wfile.flush()
+                    elif item["type"] == "function_call":
+                        # 流式规范必需：litellm 靠 function_call_arguments.delta 累积参数，
+                        # 再转成 Anthropic 的 input_json_delta；缺失会导致 claude 收到空参数。
+                        args = item.get("arguments") or ""
+                        self.wfile.write(ev("response.function_call_arguments.delta",
+                                            item_id=item["id"], output_index=i,
+                                            delta=args))
+                        self.wfile.flush()
+                        self.wfile.write(ev("response.function_call_arguments.done",
+                                            item_id=item["id"], output_index=i,
+                                            arguments=args))
+                        self.wfile.flush()
                     self.wfile.write(ev("response.output_item.done", output_index=i, item=item))
                     self.wfile.flush()
                 self.wfile.write(ev("response.completed", response=resp))

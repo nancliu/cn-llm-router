@@ -69,6 +69,21 @@ Claude Code 需 Anthropic Messages 格式，走 LiteLLM 桥接（本 ADR 不实�
 
 检测基于标准库（socket bind 探测 + netstat/tasklist + PowerShell CIM），无新依赖。
 
+### Responses 流式必须发 function_call_arguments.delta（2026-10-03 修复）
+
+现象：Claude Code 会话中带参数的工具调用 100% 报参数缺失
+（Bash command / Read file_path / Grep pattern），无参数工具正常。
+
+根因：`/v1/responses` 流式只发 `output_item.added/done`，
+**漏发 `response.function_call_arguments.delta`**——litellm 靠该事件累积参数并转成
+Anthropic 的 `input_json_delta`；缺失时 Claude Code 收到的 tool_use.input 恒为 `{}`。
+文本正常（有 `output_text.delta`），故只影响工具参数，与现象完全吻合。
+
+修复：`_send_responses_sse` 对 function_call 补发 `response.function_call_arguments.delta`
+（携带完整 arguments）与 `response.function_call_arguments.done`。
+回归保护：`tests/test_serve.py::test_responses_sse_emits_function_call_arguments_delta`；
+端到端实测 litellm 流式 output 恢复 `input_json_delta`（`{"command": "ls -la"}`）。
+
 ### 判类输入提取
 
 取请求 messages 中**最后一条 role=user 且 content 为字符串**的消息做判类（跳过 tool 消息），

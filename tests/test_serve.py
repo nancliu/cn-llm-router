@@ -11,6 +11,7 @@
 """
 import json
 import os
+import re
 import threading
 import urllib.error
 import urllib.request
@@ -33,6 +34,7 @@ class FakeUpstream:
 
     def __init__(self):
         self.received: list[dict] = []
+        self.tool_mode = False
         self._httpd = ThreadingHTTPServer(("127.0.0.1", 0), self._make_handler())
         self.port = self._httpd.server_address[1]
         threading.Thread(target=self._httpd.serve_forever, daemon=True).start()
@@ -77,8 +79,13 @@ class FakeUpstream:
                         {"category": "程序编码", "complexity": "中",
                          "confidence": 0.9, "second_guess": ""},
                         ensure_ascii=False)
+                    tool_mode = False
+                elif body.get("tools") and outer.tool_mode:
+                    content = ""
+                    tool_mode = True
                 else:
                     content = "hi"
+                    tool_mode = False
                 resp = {
                     "id": "chatcmpl-fake", "object": "chat.completion", "created": 1,
                     "model": body.get("model"),
@@ -87,6 +94,14 @@ class FakeUpstream:
                                  "finish_reason": "stop"}],
                     "usage": {"prompt_tokens": 10, "completion_tokens": 2, "total_tokens": 12},
                 }
+                if tool_mode:
+                    resp["choices"][0]["message"] = {
+                        "role": "assistant", "content": "",
+                        "tool_calls": [{"id": "call_fake_1", "type": "function",
+                                        "function": {"name": "Bash",
+                                                     "arguments": "{\"command\": \"ls\"}"}}],
+                    }
+                    resp["choices"][0]["finish_reason"] = "tool_calls"
                 payload = json.dumps(resp, ensure_ascii=False).encode("utf-8")
                 self.send_response(200)
                 self.send_header("Content-Type", "application/json; charset=utf-8")
@@ -282,6 +297,66 @@ def test_bad_json_400(server):
 
 
 # ---------- 元端点 ----------
+
+def test_responses_sse_emits_function_call_arguments_delta(server, fake_upstream):
+    """/v1/responses stream=True：必须发出 response.function_call_arguments.delta，
+    litellm 靠它转 Anthropic input_json_delta——缺失会致 claude 收到空工具参数（回归保护）。"""
+    fake_upstream.tool_mode = True
+    body = {
+        "model": "auto", "stream": True,
+        "input": [{"type": "message", "role": "user",
+                   "content": [{"type": "input_text", "text": "用 Bash 查看当前目录"}]}],
+        "tools": [{"type": "function", "function": {
+            "name": "Bash", "description": "Run a bash command",
+            "parameters": {"type": "object",
+                           "properties": {"command": {"type": "string"}},
+                           "required": ["command"]}}}],
+    }
+    req = urllib.request.Request(
+        server + "/v1/responses", data=json.dumps(body).encode("utf-8"),
+        headers={"Content-Type": "application/json"}, method="POST")
+    with urllib.request.urlopen(req, timeout=30) as r:
+        raw = r.read().decode("utf-8")
+    assert "response.output_item.added" in raw
+    assert "response.function_call_arguments.delta" in raw
+    # 解析 SSE 事件，取 delta 事件里的参数内容
+    deltas = []
+    for chunk in raw.split("\n\n"):
+        chunk = chunk.strip()
+        if not chunk.startswith("data:"):
+            continue
+        payload = chunk[len("data:"):].strip()
+        if payload == "[DONE]":
+            continue
+        try:
+            ev = json.loads(payload)
+        except json.JSONDecodeError:
+            continue
+        if ev.get("type") == "response.function_call_arguments.delta":
+            deltas.append(ev.get("delta", ""))
+    assert deltas, "缺少 function_call_arguments.delta 事件内容"
+    joined = "".join(deltas)
+    assert '"command"' in joined and '"ls"' in joined, f"delta 参数不完整: {joined}"
+    assert "response.function_call_arguments.done" in raw
+    assert "response.output_item.done" in raw
+
+
+def test_responses_sse_text_delta(server):
+    """/v1/responses stream=True 文本消息：output_text.delta/done 正常。"""
+    body = {
+        "model": "auto", "stream": True,
+        "input": [{"type": "message", "role": "user",
+                   "content": [{"type": "input_text", "text": "你好"}]}],
+    }
+    req = urllib.request.Request(
+        server + "/v1/responses", data=json.dumps(body).encode("utf-8"),
+        headers={"Content-Type": "application/json"}, method="POST")
+    with urllib.request.urlopen(req, timeout=30) as r:
+        raw = r.read().decode("utf-8")
+    assert "response.output_text.delta" in raw
+    assert "response.output_text.done" in raw
+    assert "response.completed" in raw
+
 
 def test_models_and_health(server):
     status, resp = _get(server, "/v1/models")
