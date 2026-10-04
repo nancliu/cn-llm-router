@@ -48,3 +48,4 @@ model_list:
 litellm_settings:
   drop_params: true          # 上游不支持的参数（如 cache_control）静默丢弃而非报错
   num_retries: 0             # 转换层不做重试（serve/RouterClient 已有 failover）
+

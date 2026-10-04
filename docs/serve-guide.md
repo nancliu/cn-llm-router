@@ -7,12 +7,24 @@ LiteLLM 桥接（Claude Code）作为模型上游消费。核心承诺（ADR-002
 
 ## 1. 启动
 
+**推荐：一键启动脚本**（Windows，自动处理 DATABASE_URL 冲突 + 单实例重启）：
+
+```powershell
+powershell -ExecutionPolicy Bypass -File scripts\start-gateway.ps1
+```
+
+脚本做的事：① 清理当前进程的 `DATABASE_URL` 环境变量 → ② 启动 serve（单实例守护，自动关旧启新）→ ③ 启动 litellm（若使用 Claude Code 桥接）→ ④ 就绪探测。日志：`serve.out.log` / `serve.err.log` / `litellm.out.log` / `litellm.err.log`。
+
+**仅 serve（无 litellm）**：
+
 ```bash
 cn-llm-router serve                      # 默认 127.0.0.1:10041
 cn-llm-router serve --port 10041 --strategy 纯能力优先
 cn-llm-router serve --token my-secret    # 启用认证（或环境变量 CN_LLM_ROUTER_SERVE_TOKEN）
 cn-llm-router serve --no-restart         # 端口已有本应用实例时不自动重启（默认自动关旧启新）
 ```
+
+> **为什么 litellm 启动要清 DATABASE_URL**：litellm 的数据库（PostgreSQL）用于 virtual keys / spend tracking / budget 等代理级功能。它沿用 12-factor 通用环境变量名 `DATABASE_URL`（Django / Prisma / Heroku 生态同款），启动时若 config 未配置 `general_settings.database_url` 就回退读环境变量（源码 `proxy_server.py`：config 优先 → 无则 `get_secret("DATABASE_URL")`）。你机器上其他软件（如 PostgreSQL 安装）可能已设置它 → litellm 误连失败崩溃。本桥接场景不需要这些 DB 功能，所以确保启动环境里没有该变量即可。注意 litellm 的 database_url **只支持 `postgresql://`**，sqlite 会报 unsupported scheme。
 
 **单实例守护（默认开启）**：启动前自动检查目标端口——若已被**本应用 serve 实例**占用
 （如重复启动、上一会话残留），自动关闭旧实例再启动新实例，避免多实例抢端口导致路由混乱；
