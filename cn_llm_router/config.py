@@ -83,6 +83,7 @@ class ProviderSpec:
     key_env: str
     timeout: float = 60.0
     backend: str = "openai"
+    enabled: bool = True   # False = 显式停用（套餐未购买/临时下线），不参与路由与 /v1/models
 
 
 @dataclass
@@ -174,6 +175,7 @@ def load_config(config_dir: Optional[str] = None) -> RouterConfig:
             key_env=key_env,
             timeout=float(spec.get("timeout", 60.0)),
             backend=str(spec.get("backend", "openai")),
+            enabled=bool(spec.get("enabled", True)),
         )
     cfg.providers = providers
 
@@ -231,6 +233,8 @@ def load_config(config_dir: Optional[str] = None) -> RouterConfig:
 
 
 def key_available(provider: ProviderSpec, environ: Optional[dict] = None) -> bool:
-    """供应商可用性（ADR-0005）：对应 key 环境变量已配置（非空）。"""
+    """供应商可用性（ADR-0005）：key 环境变量已配置（非空）且 provider 未被显式停用。"""
+    if not provider.enabled:
+        return False
     env = os.environ if environ is None else environ
     return bool(str(env.get(provider.key_env, "")).strip())

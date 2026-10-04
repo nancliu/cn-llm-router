@@ -39,6 +39,24 @@ def test_base_url_env_empty_ignored(monkeypatch, tmp_path):
     assert vc.base_url == "https://ark.cn-beijing.volces.com/api/v3"
 
 
+def test_enabled_flag_disables_provider(monkeypatch, tmp_path):
+    """providers.yaml 中 enabled: false 的 provider 不参与路由（key_available=False）。"""
+    from cn_llm_router.config import key_available
+    from cn_llm_router.config import ProviderSpec
+    monkeypatch.setenv("DASHSCOPE_API_KEY", "sk-test")
+    cfg = _cfg(tmp_path)
+    qwen = cfg.providers["Qwen3.8-Max-0902"]
+    assert qwen.enabled is True  # example 配置默认启用
+    assert key_available(qwen) is True
+    off = ProviderSpec(logical_name="X", provider="dashscope",
+                       base_url="http://x/v1", api_model="x", key_env="DASHSCOPE_API_KEY",
+                       enabled=False)
+    assert key_available(off) is False  # 即使 key 已配置也停用
+    on = ProviderSpec(logical_name="Y", provider="dashscope",
+                      base_url="http://y/v1", api_model="y", key_env="DASHSCOPE_API_KEY")
+    assert key_available(on) is True
+
+
 def test_dotenv_loads_keys(monkeypatch, tmp_path):
     """_load_dotenv：注入键值、去引号、不覆盖已存在的环境变量。"""
     monkeypatch.delenv("CN_LLM_ROUTER_NO_DOTENV", raising=False)  # 本用例需要加载行为
