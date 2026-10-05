@@ -9,6 +9,7 @@ config/providers.yaml
 config/classifier.yaml
 .DS_Store
 *.log
+_gateway.lock
 dist/
 build/
 .idea/
