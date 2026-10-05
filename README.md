@@ -10,7 +10,9 @@
 - ✅ 路由层 v1（任务分类器 + 模型选择器 + OpenAI 兼容薄网关），172 个测试通过（Python 3.10/3.11/3.12，GitHub Actions CI）
 - ✅ Sub-Agent 多模型编排（ADR-0007）：一个任务拆多个子任务，每个独立判类选模型分配不同大模型
 - ✅ 工具链：飞书打分表同步、分类在线评测（180 golden cases）、多模态实测、模型版本跟踪（ADR-0008）、社区评测叠加（ADR-0009）、CLI、PyPI 打包（wheel 已验证）、LiteLLM backend
-- ✅ OpenAI 兼容 serve 网关（ADR-0021）：本地模型端点（默认 127.0.0.1:10041，含 /v1/chat/completions + /v1/responses），透明转发不衰减；**Codex 零转换层直连、Claude Code 经 litellm 桥接**（真实模型 tool 往返已实测），接入见 `docs/serve-guide.md`
+- ✅ OpenAI 兼容 serve 网关（ADR-0021）：本地模型端点（默认 127.0.0.1:10041，含 /v1/chat/completions + /v1/responses + /v1/models + /v1/routes + /health），透明转发不衰减；**Codex 零转换层直连、Claude Code 经 litellm 桥接**（真实模型 tool 往返已实测），接入见 `docs/serve-guide.md`
+- ✅ **本地面板（Web）**（ADR-0017）：`cn-llm-router web` 一键启动（默认 http://127.0.0.1:10040），四个页面——推荐查询（输入任务 → 查看适用 LLM）/ 网关路由（serve + litellm 在线状态、最近 50 条实际路由决策、分类评测）/ 成本报表 / 缓存状态；模型注册表含本机状态列（可用 / 缺 key / 已停用 / 未配置 key）
+- ✅ 网关可靠性：serve 单实例守护（端口占用自动关旧启新）、Windows 计划任务自愈（每 10 分钟检查 + 登录自启）、`start-gateway.ps1` 一键启动（自动清 `DATABASE_URL` 同名变量、litellm 配置纯 ASCII 防 GBK 崩溃），详见 `docs/serve-guide.md`
 - ✅ 在线评测（2026-09-30 分类规则回归修复后全量重跑，180 golden cases）：Qwen3.8-Max-0902 端到端 **100%（180/180）** 为默认分类模型；DeepSeek-V4.1-Flash-CED 98.9% 且快约 6 倍（ADR-0020，报告见 `reports/eval-qwen-fix-20260930.json`）
 
 ## 与 LiteLLM / RouteLLM 的定位区别
@@ -52,7 +54,7 @@ CLI `cn-llm-router compare` 与 Web 面板推荐结果卡均附「国外主流�
 ## 快速使用
 
 ```bash
-pip install cn-llm-router                 # PyPI 安装（v0.3.0）
+pip install cn-llm-router                 # PyPI 安装（v0.4.0）
 # 开发安装：pip install -e ".[dev]"
 # 离线可用（无需 key）：分类 + 推荐（availability_filter=False 从全量集比较）
 python - <<'PY'
@@ -108,6 +110,7 @@ cn-llm-router select --category 程序编码 --complexity 低 --no-availability-
 cn-llm-router compare --category 程序编码 --complexity 高 --no-availability-filter # 推荐 + 国外主流模型参照（Claude/GPT/Gemini/Grok）
 cn-llm-router route "用SQL统计每日订单量" --no-availability-filter                 # 分类+推荐+就绪客户端
 cn-llm-router serve --port 10041 --strategy 平衡 --token my-secret                 # OpenAI 兼容 serve 网关（ADR-0021；默认单实例守护：端口已有本应用实例时自动关旧启新，--no-restart 关闭）
+cn-llm-router web --port 10040                                                      # 本地面板（推荐查询/网关路由/成本/缓存）
 cn-llm-router list-models / list-categories / list-strategies                      # 数据与策略查看
 # 全部命令支持 --json（stdout 仅一份 JSON，可管道/脚本化）
 ```
@@ -115,6 +118,33 @@ cn-llm-router list-models / list-categories / list-strategies                   
 > **harness 接入（能力不变弱，透明转发铁律 ADR-0021）**：
 > - **Codex**（零转换层直连）：`docs/serve-guide.md` 第 3 节 `config.toml` 示例——`model_provider.base_url` 指向 `http://127.0.0.1:10041/v1`，`model=auto` 判类路由或 `model=<logical_name>` 点名透传。
 > - **Claude Code**（经 litellm 桥接）：serve 同时提供 `/v1/responses`，`docs/serve-guide.md` 第 4 节 + `config/litellm-proxy.example.yaml` 一条命令启动 litellm proxy 即可，真实模型多轮 tool 往返已实测。
+
+## 本地面板（查看适用 LLM）
+
+零依赖 Web 面板（标准库 `http.server`，仅监听 127.0.0.1，ADR-0017）。启动后浏览器打开 http://127.0.0.1:10040：
+
+```bash
+cn-llm-router web                      # 默认端口 10040；--port 可改
+```
+
+| 页面 | 路径 | 内容 |
+|---|---|---|
+| **推荐查询** | `/` | 输入任务 prompt → 判类（12 类 × 3 复杂度 + 置信度）→ 按三档策略推荐主选/备选模型（能力分/成本/理由）+ 国外主流模型参照；可用性过滤开关 |
+| **网关路由** | `/routes` | serve（10041）+ litellm（4000）在线状态与可用模型；**最近 50 条实际路由决策**（时间/类别/复杂度/选中模型/策略/耗时/tokens/成败，失败显示 attempted 与错误）；分类评测结论（180 golden cases） |
+| **成本报表** | `/cost` | 月度成本汇总（按模型/类别/事件类型，复用 `scripts/cost_report.py`） |
+| **缓存状态** | `/cache` | 缓存配置 + 长驻进程实例 hits/misses/命中率 |
+
+模型注册表含**本机状态列**（可用 / 缺 key / 已停用 `enabled=false` / 未配置 key），与 `config/providers.yaml` 实时一致；面板复用长驻 `Classifier` 实例，缓存命中率跨请求累积。多线程（`ThreadingHTTPServer`），慢分类不阻塞其它请求。
+
+## serve 网关端点
+
+| 端点 | 作用 |
+|---|---|
+| `/v1/chat/completions` | `model=auto` 判类路由 / `model=<logical_name>` 点名透传 + 同类别备选兜底；流式原样 |
+| `/v1/responses` | OpenAI Responses 协议（含 function_call 参数 delta 完整流式，供 litellm 桥接） |
+| `/v1/models` | 当前可用模型列表（`enabled=false` 自动摘除） |
+| `/v1/routes` | 最近 50 条路由决策（运维与选型核查） |
+| `/health` | 存活探针（自愈计划任务使用） |
 
 ## 工具链（scripts/）
 
