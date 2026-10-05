@@ -78,6 +78,19 @@ providers:
     api_model: doubao-seed-2-1-pro
     key_env: VOLCENGINE_API_KEY
     timeout: 60
+  # 火山方舟 标准 API（普通 apikey，按量付费；key_env 独立，未配 key 时自动不可用）
+  DeepSeek-V4.1-Flash-CED-ARK:
+    provider: volcengine
+    base_url: https://ark.cn-beijing.volces.com/api/v3
+    api_model: deepseek-v4-1-flash-260910
+    key_env: VOLCENGINE_ARK_API_KEY
+    timeout: 60
+  豆包Seed-2.1-Pro-ARK:
+    provider: volcengine
+    base_url: https://ark.cn-beijing.volces.com/api/v3
+    api_model: doubao-seed-2-1-pro-260628
+    key_env: VOLCENGINE_ARK_API_KEY
+    timeout: 60
   腾讯混元Hy3:
     provider: tencent
     base_url: https://api.hunyuan.cloud.tencent.com/v1

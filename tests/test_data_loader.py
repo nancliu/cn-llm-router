@@ -7,7 +7,10 @@ from cn_llm_router.data_loader import COMPLEXITIES, load_data
 def test_counts(data):
     assert len(data.models) >= 15
     assert len(data.categories) == 12
-    assert len(data.scores) == 375  # v1：36×15 格中有效分值（N/A/待补充不计数）
+    # v1：36×15 格中有效分值（N/A/待补充不计数）。
+    # 2026-10-05 登记火山方舟标准API双通道（CED-ARK/Seed-ARK 各复制基础行评分）后：
+    # 375 + 36(CED-ARK 全有效) + 33(Seed-ARK 扣多模态 3 个空分格) = 444
+    assert len(data.scores) == 444
 
 
 def test_version(data):

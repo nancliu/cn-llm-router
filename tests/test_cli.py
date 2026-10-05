@@ -96,7 +96,8 @@ def test_list_models():
 def test_list_models_json_count():
     r = run_cli("list-models", "--json")
     out = json.loads(r.stdout)
-    assert len(out) == 15
+    # 2026-10-05 登记火山方舟标准API双通道（-ARK）后 15 → 17
+    assert len(out) == 17
 
 
 def test_list_categories():
