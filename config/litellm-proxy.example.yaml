@@ -1,27 +1,34 @@
-# litellm proxy 配置示例（Claude Code → cn-llm-router serve，ADR-0021）
+# litellm proxy config (Claude Code -> cn-llm-router serve, see ADR-0021)
 #
-# 作用：Claude Code 只认 Anthropic Messages 格式；本配置让 litellm proxy 把
-# /v1/messages 请求翻译成 OpenAI chat 格式，转发给 cn-llm-router serve 网关，
-# 由 router 判类选型并透明转发到国产模型（Qwen / CED / GLM ...）。
+# Purpose: Claude Code only speaks Anthropic Messages format. This config lets
+# litellm proxy translate /v1/messages requests into OpenAI chat format and
+# forward them to the cn-llm-router serve gateway, which classifies the request
+# and transparently routes to CN models (Qwen / CED / GLM ...).
 #
-# 启动：
-#   cn-llm-router serve --port 10041            # 先启动 router 网关
+# NOTE: keep this file pure ASCII (English comments only). litellm reads the
+# config file with the system default encoding (GBK on zh-CN Windows), so
+# non-ASCII bytes (UTF-8 Chinese comments) crash startup with
+# UnicodeDecodeError 'gbk'. serve.py reads its own YAML with explicit utf-8,
+# which is why providers.yaml can keep Chinese comments.
+#
+# Start:
+#   cn-llm-router serve --port 10041            # router gateway first
 #   litellm --config config/litellm-proxy.example.yaml --port 4000
-# Claude Code 侧：
+# Claude Code side:
 #   export ANTHROPIC_BASE_URL=http://127.0.0.1:4000
 #   export ANTHROPIC_AUTH_TOKEN=<litellm master_key>
-#   export ANTHROPIC_MODEL=router-auto          # 或 router-qwen（点名透传）
+#   export ANTHROPIC_MODEL=router-auto          # or router-qwen (named passthrough)
 #   export ANTHROPIC_SMALL_FAST_MODEL=router-auto
 #   claude
 #
-# model_name 语义（会原样作为 serve 的 model 参数）：
-#   router-auto  → model=auto  判类路由（每请求判类，缓存 1h）
-#   router-qwen  → model=Qwen3.8-Max-0902  点名透传 + 同类别备选兜底
+# model_name semantics (passed through to serve as the model argument):
+#   router-auto  -> model=auto  classify-and-route per request (cache 1h)
+#   router-qwen  -> model=Qwen3.8-Max-0902  named passthrough + same-category backup
 #
-# 注意：api_key 为占位（serve 未启用 --token 时任意非空即可）；
-# 若 serve 启用了 token，这里填同一 token。
+# Note: api_key is a placeholder (any non-empty value works while serve has no
+# --token); if serve enables a token, use the same token here.
 
-master_key: sk-router-bridge            # Claude Code 用此作 ANTHROPIC_AUTH_TOKEN
+master_key: sk-router-bridge            # Claude Code uses this as ANTHROPIC_AUTH_TOKEN
 
 model_list:
   - model_name: router-auto
@@ -46,6 +53,5 @@ model_list:
       timeout: 120
 
 litellm_settings:
-  drop_params: true          # 上游不支持的参数（如 cache_control）静默丢弃而非报错
-  num_retries: 0             # 转换层不做重试（serve/RouterClient 已有 failover）
-
+  drop_params: true          # silently drop unsupported params (e.g. cache_control)
+  num_retries: 0             # no retry at translation layer (serve/RouterClient handles failover)

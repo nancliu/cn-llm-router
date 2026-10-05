@@ -37,6 +37,8 @@ cn-llm-router serve --no-restart         # 端口已有本应用实例时不自�
 ```
 
 > **为什么 litellm 启动要清 DATABASE_URL**：litellm 的数据库（PostgreSQL）用于 virtual keys / spend tracking / budget 等代理级功能。它沿用 12-factor 通用环境变量名 `DATABASE_URL`（Django / Prisma / Heroku 生态同款），启动时若 config 未配置 `general_settings.database_url` 就回退读环境变量（源码 `proxy_server.py`：config 优先 → 无则 `get_secret("DATABASE_URL")`）。你机器上其他软件（如 PostgreSQL 安装）可能已设置它 → litellm 误连失败崩溃。本桥接场景不需要这些 DB 功能，所以确保启动环境里没有该变量即可。注意 litellm 的 database_url **只支持 `postgresql://`**，sqlite 会报 unsupported scheme。
+>
+> **litellm 配置文件必须保持纯 ASCII**（2026-10-05 实测）：litellm 用系统默认编码（中文 Windows = GBK）读 YAML，配置文件里的 UTF-8 中文注释会导致 `UnicodeDecodeError: 'gbk' codec can't decode byte ...` 启动即崩（serve.py 读自己的 YAML 用显式 UTF-8 所以 providers.yaml 可以保留中文注释）。`config/litellm-proxy.example.yaml` 已全部改为英文注释。
 
 **单实例守护（默认开启）**：启动前自动检查目标端口——若已被**本应用 serve 实例**占用
 （如重复启动、上一会话残留），自动关闭旧实例再启动新实例，避免多实例抢端口导致路由混乱；
