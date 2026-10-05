@@ -51,6 +51,11 @@
 对比数据已作为**参考数据资产**融入 router（`data/foreign_comparison.csv`，仅展示、不参与路由排序）：
 CLI `cn-llm-router compare` 与 Web 面板推荐结果卡均附「国外主流模型参照」（ADR-0019）。
 
+## 相关文章
+
+- 掘金《cn-llm-router：给国外 harness 配国内高性价比模型》：https://juejin.cn/post/7692615195569946664
+- 知乎《给国外 harness 配国内高性价比模型，我写了个 cn-llm-router》：https://zhuanlan.zhihu.com/p/2090549545964933804
+
 ## 快速使用
 
 ```bash
