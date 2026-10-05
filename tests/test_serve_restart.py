@@ -69,7 +69,14 @@ class TestIsRouterProcess:
         p = subprocess.Popen([sys.executable, "-c", code],
                              stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
         try:
-            assert _is_router_process(p.pid) is True
+            # Popen 返回后子进程可能尚未完成 exec，/proc/<pid>/cmdline 可能为空——轮询等待
+            ok = False
+            for _ in range(50):
+                if _is_router_process(p.pid):
+                    ok = True
+                    break
+                time.sleep(0.1)
+            assert ok
         finally:
             _kill_pid(p.pid)
 
