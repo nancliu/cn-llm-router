@@ -54,7 +54,7 @@ CLI `cn-llm-router compare` 与 Web 面板推荐结果卡均附「国外主流�
 ## 快速使用
 
 ```bash
-pip install cn-llm-router                 # PyPI 安装（v0.4.0）
+pip install cn-llm-router                 # PyPI 安装（v0.4.1）
 # 开发安装：pip install -e ".[dev]"
 # 离线可用（无需 key）：分类 + 推荐（availability_filter=False 从全量集比较）
 python - <<'PY'

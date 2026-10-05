@@ -276,6 +276,9 @@ def _make_handler(cfg: RouterConfig, data: RouterData, classifier: Classifier):
                 trs = []
                 for e in rows:
                     failed = e.get("status") in ("failed", "error")
+                    status_cell = (
+                        "<span class='off'>失败</span>" if failed else "<span class='ok'>成功</span>"
+                    )
                     model_cell = (
                         f"<span class='off'>{_esc(e.get('model'))}</span>"
                         f"<br><span class='muted'>{_esc(e.get('error'))}</span>"
@@ -290,7 +293,7 @@ def _make_handler(cfg: RouterConfig, data: RouterData, classifier: Classifier):
                         f"<td>{_esc(e.get('strategy'))} / {_esc(e.get('mode'))}</td>"
                         f"<td style='text-align:right'>{_esc(e.get('elapsed_s'))}</td>"
                         f"<td style='text-align:right'>{_esc(e.get('tokens'))}</td>"
-                        f"<td>{'<span class=\'off\'>失败</span>' if failed else '<span class=\'ok\'>成功</span>'}</td>"
+                        f"<td>{status_cell}</td>"
                         "</tr>"
                     )
                 routes_html = (
