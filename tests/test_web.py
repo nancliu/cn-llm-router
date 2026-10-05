@@ -119,3 +119,23 @@ def test_concurrent_posts_do_not_block(base_url):
     assert len(results) == 4
     assert all(code == 200 for code, _ in results)
     assert all("程序编码" in body for _, body in results)
+
+
+# 7. /routes 页 200：结构完整（网关状态 + 路由历史 + 评测），不依赖本机 serve 在线/离线
+def test_routes_page_200(base_url):
+    code, body = _get(base_url + "/routes")
+    assert code == 200
+    assert "网关路由" in body
+    assert "网关状态" in body
+    assert ("在线" in body) or ("离线" in body)  # serve 状态如实显示
+    assert "分类评测" in body      # 180 golden cases 静态结论
+    assert "100%" in body
+
+
+# 8. 注册表渲染本机状态列（无 provider → 未配置 key；含 enabled 口径说明）
+def test_registry_shows_provider_status(base_url):
+    _, body = _get(base_url + "/")
+    assert "本机状态" in body
+    assert "未配置 key" in body
+    assert "已停用" in body        # 口径说明文案
+    assert "模型注册表" in body

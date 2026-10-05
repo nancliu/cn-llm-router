@@ -1,7 +1,8 @@
 """本地面板（ADR-0017）：标准库 http.server 实现，零外部依赖，仅监听 127.0.0.1。
 
-三个页面：
-- GET  /        首页（推荐查询表单 + 12 类定义 + 模型注册表）
+四个页面：
+- GET  /        首页（推荐查询表单 + 12 类定义 + 模型注册表[含本机状态]）
+- GET  /routes  网关路由（serve 10041 / litellm 4000 在线状态 + 最近实际路由决策 + 分类评测）
 - POST /route   推荐查询：持久 Classifier 分类 → selector.select 选模型
 - GET  /cost    成本报表（复用 scripts/cost_report.py 的汇总逻辑）
 - GET  /cache   缓存状态（配置 + 本进程实例 hits/misses/size）
@@ -11,14 +12,16 @@
 from __future__ import annotations
 
 import html as _html
+import json as _json
 import os
 import sys
+import urllib.request as _urllib
 from datetime import datetime
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from urllib.parse import parse_qs, urlparse
 
 from .classifier import Classifier
-from .config import RouterConfig, load_config
+from .config import RouterConfig, key_available, load_config
 from .data_loader import RouterData, load_data
 from .selector import select as _select
 from .types import STRATEGIES
@@ -60,6 +63,11 @@ button:hover { background: #1d4ed8; }
         padding: 2px 8px; font-size: 13px; margin-right: 6px; }
 .warn { background: #fffbeb; border: 1px solid #fcd34d; color: #92400e;
         padding: 10px 14px; border-radius: 6px; }
+.ok { color: #166534; font-weight: 600; }
+.off { color: #b91c1c; font-weight: 600; }
+.pend { color: #6b7280; }
+code { background: #f3f4f6; padding: 1px 6px; border-radius: 4px; font-size: 13px; }
+footer { color: #6b7280; font-size: 12.5px; padding: 16px 20px; text-align: center; }
 """
 
 
@@ -68,10 +76,13 @@ def _shell(title: str, body: str) -> str:
         "<!DOCTYPE html><html lang=\"zh-CN\"><head><meta charset=\"utf-8\">"
         "<meta name=\"viewport\" content=\"width=device-width,initial-scale=1\">"
         f"<title>{_html.escape(title)}</title><style>{_CSS}</style></head><body>"
-        "<nav><a href=\"/\">推荐查询</a><a href=\"/cost\">成本报表</a>"
-        "<a href=\"/cache\">缓存状态</a></nav><main>"
+        "<nav><a href=\"/\">推荐查询</a><a href=\"/routes\">网关路由</a>"
+        "<a href=\"/cost\">成本报表</a><a href=\"/cache\">缓存状态</a></nav><main>"
         f"{body}"
-        "</main></body></html>"
+        "</main><footer>国内大模型选择器 cn-llm-router · 打分表 v1-20260923（12 类 × 3 级复杂度 × 三档性价比开关）"
+        "· 评分/价格数字可溯源，缺口标「待补充」· <a href=\"https://github.com/nancliu/cn-llm-router\">GitHub</a> · "
+        "<a href=\"https://feishu.doubao.com/sheets/Ku08sUbNHhtNggtaa82c99qYnwe\">打分表</a></footer>"
+        "</body></html>"
     )
 
 
@@ -166,12 +177,22 @@ def _make_handler(cfg: RouterConfig, data: RouterData, classifier: Classifier):
         for m in data.models.values():
             pin = f"{m.price_in:.2f}" if m.price_in is not None else "—"
             pout = f"{m.price_out:.2f}" if m.price_out is not None else "—"
+            prov = cfg.providers.get(m.logical_name)
+            if prov is None:
+                status = "<span class=\"pend\">未配置 key</span>"
+            elif not prov.enabled:
+                status = "<span class=\"off\">已停用（enabled=false）</span>"
+            elif key_available(prov):
+                status = "<span class=\"ok\">可用</span>"
+            else:
+                status = "<span class=\"pend\">缺 key</span>"
             mrows.append(
                 "<tr>"
                 f"<td>{_html.escape(m.logical_name)}</td>"
                 f"<td>{_html.escape(m.vendor)}</td>"
                 f"<td style='text-align:right'>{pin}</td>"
                 f"<td style='text-align:right'>{pout}</td>"
+                f"<td>{status}</td>"
                 "</tr>"
             )
         return (
@@ -179,9 +200,119 @@ def _make_handler(cfg: RouterConfig, data: RouterData, classifier: Classifier):
             f"<table><tr><th>类别</th><th>说明</th></tr>{cat_rows}</table></div>"
             "<div class=\"card\"><h2>模型注册表</h2>"
             "<table><tr><th>逻辑模型名</th><th>厂商</th><th style='text-align:right'>输入价</th>"
-            f"<th style='text-align:right'>输出价</th></tr>{''.join(mrows)}</table>"
-            "<p class=\"muted\">价格单位：元/百万 tokens（ADR-0001 口径）。</p></div>"
+            f"<th style='text-align:right'>输出价</th><th>本机状态</th></tr>{''.join(mrows)}</table>"
+            "<p class=\"muted\">价格单位：元/百万 tokens（ADR-0001 口径）。"
+            "「已停用」= config/providers.yaml 中 enabled=false（如套餐未续费）；"
+            "「缺 key」= 已配置 provider 但环境变量无对应 API key，不参与路由。</p></div>"
         )
+
+    def _fetch_json(url: str, timeout: float = 3.0) -> dict | None:
+        try:
+            with _urllib.urlopen(url, timeout=timeout) as r:
+                return _json.loads(r.read().decode("utf-8"))
+        except Exception:  # noqa: BLE001 —— 探测失败一律视为离线
+            return None
+
+    def _gateway_status_section() -> str:
+        """serve 10041 + litellm 4000 在线状态与可用模型（本地面板自检网关链路）。"""
+        serve_alive = _fetch_json("http://127.0.0.1:10041/health") is not None
+        litellm_ok = False
+        litellm_models: list[str] = []
+        try:
+            req = _urllib.Request(
+                "http://127.0.0.1:4000/v1/models",
+                headers={"Authorization": "Bearer sk-router-bridge"},
+            )
+            with _urllib.urlopen(req, timeout=3) as r:
+                litellm_ok = True
+                j = _json.loads(r.read().decode("utf-8"))
+                litellm_models = [str(m.get("id", "")) for m in j.get("data", []) if m.get("id")]
+        except Exception:  # noqa: BLE001 —— 离线
+            pass
+        serve_tag = "<span class='ok'>在线</span>" if serve_alive else "<span class='off'>离线</span>"
+        lit_tag = "<span class='ok'>在线</span>" if litellm_ok else "<span class='off'>离线</span>"
+        start_hint = (
+            "<p class=\"muted\">serve 未启动时：<code>powershell -ExecutionPolicy Bypass "
+            "-File scripts/start-gateway.ps1</code>（清 DATABASE_URL → 起 serve → 起 litellm → 就绪探测）。"
+            "已注册自愈计划任务：每 10 分钟检查 + 登录自启。</p>"
+        )
+        if litellm_models:
+            models_html = (
+                "<p>litellm 可用模型："
+                + "".join(f"<span class=\"tag\">{_html.escape(m)}</span>" for m in litellm_models)
+                + "</p>"
+            )
+        else:
+            models_html = ""
+        return (
+            "<div class=\"card\"><h2>网关状态</h2>"
+            "<table><tr><th>组件</th><th>地址</th><th>状态</th></tr>"
+            f"<tr><td>serve（判类路由网关）</td><td>127.0.0.1:10041</td><td>{serve_tag}</td></tr>"
+            f"<tr><td>litellm（Claude 格式桥接）</td><td>127.0.0.1:4000</td><td>{lit_tag}</td></tr>"
+            f"</table>{models_html}{start_hint if not serve_alive else ''}</div>"
+        )
+
+    def _routes_page() -> str:
+        """最近路由决策（GET /v1/routes，最新在前）：实际选了什么模型、耗时、tokens。"""
+        status = _gateway_status_section()
+        j = _fetch_json("http://127.0.0.1:10041/v1/routes")
+        if j is None:
+            routes_html = (
+                "<div class=\"card\"><h2>最近路由决策</h2>"
+                "<p class=\"warn\">serve 网关未启动，无法读取路由历史。"
+                "启动后 Cliude Code / Codex 每请求都会在 serve 内存记录最近 50 条（GET /v1/routes）。</p></div>"
+            )
+        else:
+            rows = j.get("data", [])
+            if not rows:
+                routes_html = (
+                    "<div class=\"card\"><h2>最近路由决策</h2>"
+                    "<p class=\"muted\">暂无路由记录——serve 启动后尚未收到任何请求（或重启后清空）。"
+                    "用 Claude Code / Codex 发一次请求后刷新本页即可看到。</p></div>"
+                )
+            else:
+                def _esc(x):
+                    return _html.escape(str(x)) if x is not None else "—"
+                trs = []
+                for e in rows:
+                    failed = e.get("status") in ("failed", "error")
+                    model_cell = (
+                        f"<span class='off'>{_esc(e.get('model'))}</span>"
+                        f"<br><span class='muted'>{_esc(e.get('error'))}</span>"
+                        if failed else
+                        f"{_esc(e.get('model'))}<br><span class='muted'>api={_esc(e.get('api_model'))}</span>"
+                    )
+                    trs.append(
+                        "<tr>"
+                        f"<td>{_esc(e.get('ts'))}</td>"
+                        f"<td>{_esc(e.get('category'))} · {_esc(e.get('complexity'))}</td>"
+                        f"<td>{model_cell}</td>"
+                        f"<td>{_esc(e.get('strategy'))} / {_esc(e.get('mode'))}</td>"
+                        f"<td style='text-align:right'>{_esc(e.get('elapsed_s'))}</td>"
+                        f"<td style='text-align:right'>{_esc(e.get('tokens'))}</td>"
+                        f"<td>{'<span class=\'off\'>失败</span>' if failed else '<span class=\'ok\'>成功</span>'}</td>"
+                        "</tr>"
+                    )
+                routes_html = (
+                    "<div class=\"card\"><h2>最近路由决策（最新在前，最多 50 条）</h2>"
+                    "<table><tr><th>时间</th><th>类别 · 复杂度</th><th>选中模型</th>"
+                    "<th>策略 / 模式</th><th style='text-align:right'>耗时 s</th>"
+                    "<th style='text-align:right'>tokens</th><th>结果</th></tr>"
+                    f"{''.join(trs)}</table>"
+                    "<p class=\"muted\">模式：auto=判类路由 / named=点名透传+同类别备选兜底。"
+                    "失败行显示上游尝试过的模型（attempted）与错误摘要。</p></div>"
+                )
+        body = (
+            "<div class=\"card\"><h1>网关路由 · 实际选了什么模型</h1>"
+            "<p class=\"muted\">本页查看 serve 网关最近实际路由决策（与 Claude Code / Codex 请求一一对应）。"
+            "推荐查询页给出「应该用哪个」；本页给出「实际用了哪个」。</p></div>"
+            f"{status}{routes_html}"
+            "<div class=\"card\"><h2>分类评测</h2>"
+            "<p>180 条 golden cases 全量评测：Qwen 分类器修复后 <b>100%</b> 通过"
+            "（reports/eval-qwen-fix-20260930.json；ADR-0020 规则修复）。"
+            "无 key 时分类走确定性规则关键词兜底，面板仍可用。</p></div>"
+        )
+        return _shell("网关路由 · cn-llm-router", body)
 
     def _home_page(prompt: str, strategy: str, availability_filter: bool,
                    result_html: str) -> str:
@@ -237,6 +368,8 @@ def _make_handler(cfg: RouterConfig, data: RouterData, classifier: Classifier):
             try:
                 if parsed.path == "/":
                     self._html(200, _home_page("", "平衡", cfg.availability_filter, ""))
+                elif parsed.path == "/routes":
+                    self._html(200, _routes_page())
                 elif parsed.path == "/cost":
                     self._render_cost(parsed.query)
                 elif parsed.path == "/cache":
