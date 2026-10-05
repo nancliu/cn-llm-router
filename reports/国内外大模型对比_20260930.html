@@ -64,6 +64,36 @@ td.vendor{text-align:left;color:var(--ink2)}
 .chart h4{font-size:14.5px;margin-bottom:4px}
 .chart .note{font-size:12px;color:var(--ink3);margin-bottom:8px}
 .chart-box{width:100%;height:380px}
+/* ===== Product flow ===== */
+.flow{display:flex;flex-wrap:wrap;align-items:center;gap:0;margin:16px 0 8px}
+.flow .node{background:#fff;border:1px solid var(--line);border-radius:10px;padding:10px 14px;min-width:132px;text-align:center;font-size:13px;color:var(--ink2)}
+.flow .node b{display:block;font-size:14px;color:var(--ink);margin-bottom:2px}
+.flow .node small{color:var(--ink3);font-size:11.5px}
+.flow .node.hub{border-color:var(--dom);border-width:2px}
+.flow .arr{color:var(--ink3);font-size:15px;padding:0 8px;flex:none}
+/* ===== Switch ===== */
+.sw{display:flex;gap:10px;flex-wrap:wrap;margin:14px 0 16px}
+.sw button{border:1px solid var(--line);background:#fff;border-radius:8px;padding:8px 18px;font-size:14px;cursor:pointer;color:var(--ink2);font-family:inherit;transition:all .15s}
+.sw button.active{background:var(--dom);border-color:var(--dom);color:#fff;font-weight:600}
+.sw button:hover:not(.active){border-color:var(--dom-l)}
+.mode-desc{background:#fff;border:1px solid var(--line);border-left:4px solid var(--dom);border-radius:8px;padding:10px 14px;font-size:13.5px;color:var(--ink2);margin-bottom:14px}
+.mode-desc b{color:var(--ink)}
+/* ===== Timeline ===== */
+.tl{display:grid;grid-template-columns:92px 22px 1fr;gap:0;margin-top:10px}
+.tl .t{text-align:right;padding:2px 0;font-size:13px;color:var(--ink2);font-weight:600}
+.tl .axis{display:flex;flex-direction:column;align-items:center;position:relative}
+.tl .axis::before{content:"";position:absolute;left:50%;top:0;bottom:0;width:2px;transform:translateX(-50%);background:var(--line)}
+.tl .axis .dot{width:10px;height:10px;border-radius:50%;background:var(--dom);margin-top:3px;flex:none}
+.tl .c{padding:0 0 20px 12px;font-size:13.5px;color:var(--ink2)}
+.tl .c b{color:var(--ink)}
+.tl .c small{color:var(--ink3);display:block;margin-top:2px}
+/* ===== Config ===== */
+.cfg{background:#0f172a;color:#cbd5e1;border-radius:10px;padding:14px 16px;font-family:Consolas,"Courier New",monospace;font-size:12.5px;overflow-x:auto;margin:10px 0;line-height:1.6;white-space:pre}
+.cfg .cm{color:#64748b}
+@media(max-width:860px){
+  .flow .node{min-width:110px}
+  .tl{grid-template-columns:72px 20px 1fr}
+}
 /* ===== Scenario ===== */
 .scen{display:grid;grid-template-columns:repeat(2,1fr);gap:14px}
 .scen .item{background:#fff;border:1px solid var(--line);border-radius:10px;padding:16px 18px;border-left:4px solid var(--dom)}
@@ -89,6 +119,7 @@ footer{padding:28px 0 48px;color:var(--ink3);font-size:12.5px;text-align:center}
   .cards{grid-template-columns:repeat(2,1fr)}
   .bignums{grid-template-columns:1fr}
   .two,.scen{grid-template-columns:1fr}
+  .two .panel,.scen .item{min-width:0}
   .srcs{columns:1}
   .hero h1{font-size:24px}
   .chart-box{height:320px}
@@ -102,9 +133,10 @@ footer{padding:28px 0 48px;color:var(--ink3);font-size:12.5px;text-align:center}
     <h1>国内外大模型对比 · 国产模型可用性信心报告</h1>
     <p class="sub">面向开源项目选型：国产头部模型在主流场景是否已可放心使用？本报告用可溯源的公开榜单与官方费率，量化能力差距、成本优势与合规便利性。</p>
     <div class="meta">
-      <span>数据日期：<b>2026-09-30</b></span>
+      <span>数据日期：<b>2026-09-30</b>（产品功能更新至 2026-10-05）</span>
       <span>汇率口径：<b>1 USD ≈ 7.2 CNY</b></span>
       <span>对比模型：<b>国产 6 头部 × 国外 5 旗舰</b></span>
+      <span>产品状态：<b>cn-llm-router v0.3.0 · PyPI 已发布</b></span>
     </div>
   </div>
 </header>
@@ -321,7 +353,156 @@ footer{padding:28px 0 48px;color:var(--ink3);font-size:12.5px;text-align:center}
     <li>Kimi 开放平台：https://platform.kimi.com/</li>
     <li>腾讯混元定价：https://cloud.tencent.com/document/product/1823/130055</li>
     <li>项目打分表（飞书）：国内大模型选择器_打分表_v1-20260923</li>
+    <li>GitHub 仓库：https://github.com/nancliu/cn-llm-router</li>
+    <li>PyPI 包：https://pypi.org/project/cn-llm-router/</li>
+    <li>serve 网关设计（ADR-0021）：仓库 docs/adr/0021-serve-gateway.md</li>
+    <li>网关运维指南：仓库 docs/serve-guide.md</li>
   </ol>
+</div>
+</section>
+
+<!-- ===== 模块9 产品能力全景 ===== -->
+<section>
+<div class="wrap">
+  <h2><span class="no">9</span>产品能力全景：cn-llm-router</h2>
+  <p class="lead">本报告所依托的选择器已演进为开源路由库（Python，PyPI 可安装）。打分表 v1 是它的评分底座；serve 网关 + litellm 桥接让 Claude Code / Codex 等 harness 直接以国产模型为后端运行。</p>
+  <div class="cards">
+    <div class="card">
+      <h3><span class="dot ok"></span>评分体系 v1</h3>
+      <p>12 类任务 × 3 级复杂度 × 15 模型，SuperCLUE 六维（数学推理/幻觉控制/科学推理/指令遵循/Agentic 编程/任务规划）+ Terminal 编程按类别权重加权；缺口标"待补充"，数字全部可溯源 URL。</p>
+    </div>
+    <div class="card">
+      <h3><span class="dot dom"></span>三档性价比开关</h3>
+      <p>纯能力优先 / 平衡（默认）/ 性价比优先，一档切换联动 36 格推荐（主选+备选+理由）。低复杂度偏性价比、高复杂度偏能力，成本权重可归零。</p>
+    </div>
+    <div class="card">
+      <h3><span class="dot ok"></span>判类路由</h3>
+      <p><code>model=auto</code> 每请求 LLM 判类选型（180 golden cases 修复后 100% 通过）；<code>model=点名</code> 透传 + 同类别备选兜底；无 key 时走确定性规则兜底，分类仍可用。</p>
+    </div>
+    <div class="card">
+      <h3><span class="dot ok"></span>透明转发铁律</h3>
+      <p>不改写 prompt、不吞 tool 参数、流式原样、tool_call 原样往返——router 层不使能力变弱（ADR-0021）。工具参数丢失根因已修复并实测恢复。</p>
+    </div>
+    <div class="card">
+      <h3><span class="dot warn"></span>路由可见性</h3>
+      <p>每次请求 INFO 日志 + <code>GET /v1/routes</code> 最近 50 条：时间/类别/复杂度/选中模型/策略/耗时/tokens，成功失败都记录，失败含 attempted 与错误摘要。</p>
+    </div>
+    <div class="card">
+      <h3><span class="dot dom"></span>可靠性与发布</h3>
+      <p>serve 单实例守护（端口占用自动关旧启新）、每 10 分钟自愈计划任务 + 登录自启、provider <code>enabled</code> 开关（套餐停用即摘出路由）、PyPI v0.3.0（0.1/0.2/0.3 均在线上）。</p>
+    </div>
+  </div>
+</div>
+</section>
+
+<!-- ===== 模块10 路由架构与透明转发 ===== -->
+<section>
+<div class="wrap">
+  <h2><span class="no">10</span>路由架构：harness → litellm → serve → 国产模型</h2>
+  <p class="lead">Claude Code 只认 Anthropic Messages 格式，litellm 把 <code>/v1/messages</code> 翻译成 OpenAI chat 转发给 serve；Codex 直接走 <code>/v1/chat/completions</code>。serve 判类选型后按主选→备选链透明转发，全程不暴露给 harness 上游细节。</p>
+  <div class="flow">
+    <div class="node"><b>Claude Code</b><small>ANTHROPIC_BASE_URL=127.0.0.1:4000</small></div>
+    <span class="arr">→</span>
+    <div class="node"><b>litellm :4000</b><small>/v1/messages 翻译为 chat</small></div>
+    <span class="arr">→</span>
+    <div class="node hub"><b>serve :10041</b><small>判类路由 + 透明转发</small></div>
+    <span class="arr">→</span>
+    <div class="node"><b>火山 coding-plan</b><small>DeepSeek-CED · 豆包</small></div>
+    <span class="arr">↕</span>
+    <div class="node"><b>百炼 token-plan</b><small>Qwen（当前停用）</small></div>
+  </div>
+  <div class="flow">
+    <div class="node"><b>Codex</b><small>wire_api=chat · 127.0.0.1:10041/v1</small></div>
+    <span class="arr">→</span>
+    <div class="node hub"><b>serve :10041</b><small>点名透传 + 同类别兜底</small></div>
+    <span class="arr">→</span>
+    <div class="node"><b>国产模型</b><small>GLM / Kimi / 混元 / MiniMax…（槽位待补 key）</small></div>
+  </div>
+  <div class="tbl-wrap" style="margin-top:6px">
+  <table>
+    <colgroup><col style="width:26%"><col style="width:42%"><col style="width:32%"></colgroup>
+    <thead><tr><th>serve 端点</th><th>作用</th><th>供谁使用</th></tr></thead>
+    <tbody>
+      <tr><td class="model">/v1/chat/completions</td><td>model=auto 判类路由 / model=点名透传+同类别备选兜底；流式原样</td><td>Codex、litellm、任何 OpenAI 兼容客户端</td></tr>
+      <tr><td class="model">/v1/responses</td><td>OpenAI Responses 协议（含 function_call 参数 delta 完整流式）</td><td>litellm 桥接</td></tr>
+      <tr><td class="model">/v1/models</td><td>当前可用模型列表（enabled=false 自动摘除）</td><td>客户端枚举</td></tr>
+      <tr><td class="model">/v1/routes</td><td>最近 50 条路由决策（时间/类别/复杂度/模型/策略/耗时/tokens/成败）</td><td>运维与选型核查</td></tr>
+      <tr><td class="model">/health</td><td>存活探针</td><td>自愈计划任务</td></tr>
+    </tbody>
+  </table>
+  </div>
+  <div class="note-box">透明转发铁律（ADR-0021）：prompt 一字不改、tool 参数原样往返、流式逐 chunk 透传、响应结构保持 OpenAI/Anthropic 语义——router 只做"选模型"一件事，能力弱化即失败（工具参数丢失事故的根因是 /v1/responses 流式漏发 function_call_arguments.delta，已修复并有端到端回归）。</div>
+</div>
+</section>
+
+<!-- ===== 模块11 三档性价比开关（交互） ===== -->
+<section>
+<div class="wrap">
+  <h2><span class="no">11</span>三档性价比开关：切换即见推荐</h2>
+  <p class="lead">打分表 G36 开关同款逻辑的交互演示：切换档位，下方锚点案例的推荐随之联动。演示取已验证锚点行；全量 36 格（12 类 × 3 复杂度）推荐见飞书打分表《综合与性价比》。</p>
+  <div class="sw" id="modeSw">
+    <button data-mode="纯能力优先">纯能力优先</button>
+    <button data-mode="平衡" class="active">平衡（默认）</button>
+    <button data-mode="性价比优先">性价比优先</button>
+  </div>
+  <div class="mode-desc" id="modeDesc"></div>
+  <div class="tbl-wrap">
+  <table>
+    <colgroup><col style="width:18%"><col style="width:10%"><col style="width:36%"><col style="width:36%"></colgroup>
+    <thead><tr><th>任务类别</th><th>复杂度</th><th>当前档位主选</th><th>选择理由</th></tr></thead>
+    <tbody id="anchorBody"></tbody>
+  </table>
+  </div>
+  <p class="note" style="font-size:12px;color:var(--ink3);margin-top:10px">注：纯能力档按能力分降序（同分取成本低者），平衡档低复杂度偏性价比/高复杂度偏能力，性价比档按 能力分/成本指数 排序（能力分&lt;50 设门槛）。Qwen3.8-Max 因百炼套餐过期在当前本机 enabled=false，表中标注"已停用"（打分表全集对比仍保留其分值）。</p>
+</div>
+</section>
+
+<!-- ===== 模块12 接入配置 ===== -->
+<section>
+<div class="wrap">
+  <h2><span class="no">12</span>接入配置：Claude Code 与 Codex</h2>
+  <p class="lead">两份最小配置即可让主流 harness 跑在国产模型上。注意：若使用 cc-switch 管理 provider，请在其 UI 中添加自定义 provider 后切换——直接改配置文件会被 cc-switch 覆盖。</p>
+  <div class="two">
+    <div class="panel dom">
+      <h4>Claude Code（经 litellm 4000）</h4>
+      <div class="cfg"><span class="cm"># 启动网关</span>
+powershell -File scripts/start-gateway.ps1
+<span class="cm"># 环境变量（cc-switch 中配置，勿手改 settings.json）</span>
+ANTHROPIC_BASE_URL=http://127.0.0.1:4000
+ANTHROPIC_AUTH_TOKEN=sk-router-bridge
+ANTHROPIC_MODEL=router-auto
+ANTHROPIC_SMALL_FAST_MODEL=router-auto</div>
+      <p class="muted">router-auto = 每请求判类路由；router-qwen / router-ced = 点名透传。</p>
+    </div>
+    <div class="panel ovs">
+      <h4>Codex（直连 serve 10041）</h4>
+      <div class="cfg">[model_providers.cn-llm-router]
+name = "cn-llm-router"
+base_url = "http://127.0.0.1:10041/v1"
+wire_api = "chat"
+<span class="cm"># 使用：codex --provider cn-llm-router --model auto</span></div>
+      <p class="muted">wire_api 支持 "chat" 与 "responses" 双值；本项目实测 chat 兼容最优。</p>
+    </div>
+  </div>
+  <div class="note-box">litellm 两个已知启动坑均已固化为脚本：① 启动前清机器级 <code>DATABASE_URL</code>（12-factor 同名变量，会误连 PostgreSQL 崩溃）；② 配置文件保持纯 ASCII（中文 Windows 上 litellm 用 GBK 默认编码读 YAML，UTF-8 中文注释会启动即崩）。</div>
+</div>
+</section>
+
+<!-- ===== 模块13 里程碑 ===== -->
+<section>
+<div class="wrap">
+  <h2><span class="no">13</span>里程碑：从打分表到可用的国产模型后端</h2>
+  <p class="lead">两个月内的演进路径——每步都可复现，全部提交在 GitHub main 分支。</p>
+  <div class="tl">
+    <div class="t">09-23</div><div class="axis"><span class="dot"></span></div><div class="c"><b>打分表 v1-20260923</b><small>12 类 × 3 复杂度 × 15 模型，飞书 4 Sheet + 三档性价比开关，40+ 来源 URL 可溯源</small></div>
+    <div class="t">09-24</div><div class="axis"><span class="dot"></span></div><div class="c"><b>路由库 + CLI</b><small>classifier / selector / gateway 实现，golden cases + pytest 单元测试，CI 评估回归门</small></div>
+    <div class="t">09-27</div><div class="axis"><span class="dot"></span></div><div class="c"><b>本地面板 web</b><small>推荐查询 / 成本报表 / 缓存状态，零依赖标准库，多线程防阻塞（ADR-0017）</small></div>
+    <div class="t">09-30</div><div class="axis"><span class="dot"></span></div><div class="c"><b>分类器修复 + PyPI 发布</b><small>Qwen 判类 180/180（100%）；trusted publishing 发布 0.1.0，后至 0.3.0</small></div>
+    <div class="t">10-02</div><div class="axis"><span class="dot"></span></div><div class="c"><b>litellm 桥接打通</b><small>Claude Code 接入实测 tool 往返，国外主流模型对照仅展示（ADR-0019）</small></div>
+    <div class="t">10-03</div><div class="axis"><span class="dot"></span></div><div class="c"><b>单实例守护 + 工具参数修复</b><small>serve 端口占用自动关旧启新；/v1/responses 流式补发 function_call_arguments.delta（ADR-0021）</small></div>
+    <div class="t">10-04</div><div class="axis"><span class="dot"></span></div><div class="c"><b>路由可见性 + 自愈</b><small>INFO 路由日志 + /v1/routes；计划任务每 10 分钟检查 + 登录自启；enabled 开关停用过期套餐</small></div>
+    <div class="t">10-05</div><div class="axis"><span class="dot"></span></div><div class="c"><b>编码与配置韧性</b><small>litellm 配置纯 ASCII（GBK 解码崩溃根因实证修复）；本面板新增"网关路由"页</small></div>
+  </div>
 </div>
 </section>
 
@@ -386,6 +567,57 @@ cC.setOption({
   ]
 });
 window.addEventListener('resize',function(){cA.resize();cB.resize();cC.resize();});
+
+// ===== 三档性价比开关（模块11，锚点案例，数据来自打分表已验证行） =====
+var MODE_DESC = {
+  '纯能力优先': '成本权重=0，仅按能力分降序（同分取成本低者）。适合预算充裕、只求任务质量上限的场景。',
+  '平衡': '默认档：低复杂度优先性价比、中复杂度平衡、高复杂度偏能力。覆盖绝大多数日常使用。',
+  '性价比优先': '价值分 = 能力分 ÷ 成本指数（能力分<50 设门槛），同分取能力高者。适合大批量、成本敏感场景。'
+};
+var CASES = [
+  {cat:'程序编码', comp:'低',
+   ability:{m:'GLM-5.3', d:'能力分 75.3（六维加权）'},
+   balanced:{m:'GLM-5.3-Flash', d:'低复杂度优先性价比，性价比指数 65.7'},
+   value:{m:'GLM-5.3-Flash', d:'价值分 66.9，备选 腾讯混元Hy3'}},
+  {cat:'程序编码', comp:'高',
+   ability:{m:'Kimi-K3', d:'Terminal 编程第 1；GLM-5.3 编程 76.84 紧随'},
+   balanced:{m:'GLM-5.3', d:'高复杂度偏能力：编程 76.84，成本 16 元'},
+   value:{m:'Kimi-K3', d:'高复杂度能力优先，成本权重下调'}},
+  {cat:'数据分析/数学推理', comp:'高',
+   ability:{m:'DeepSeek-V4.1-Flash', d:'数学推理高复杂度 76.1'},
+   balanced:{m:'DeepSeek-V4.1-Flash', d:'高复杂度头部且成本仅 4.4 元'},
+   value:{m:'DeepSeek-V4.1-Flash', d:'能力/成本指数 24.9（性价比第 3）'}},
+  {cat:'通用对话/知识问答', comp:'低',
+   ability:{m:'Qwen3.8-Max', d:'SuperCLUE 72.62 并列第 1（本机已停用：百炼套餐过期）'},
+   balanced:{m:'GLM-5.3-Flash', d:'低复杂度优先性价比'},
+   value:{m:'GLM-5.3-Flash', d:'价值分 66.9，备选 Hy3（45.2）'}},
+  {cat:'文书撰写/翻译润色', comp:'中',
+   ability:{m:'Qwen3.8-Max', d:'文书类 60~76 区间头部（已停用）'},
+   balanced:{m:'GLM-5.3', d:'平衡档：能力 71.29、成本 16 元'},
+   value:{m:'GLM-5.3-Flash', d:'性价比档指数 65.7'}}
+];
+var MODE_KEYS = { '纯能力优先':'ability', '平衡':'balanced', '性价比优先':'value' };
+var curMode = '平衡';
+function renderSwitch(){
+  document.getElementById('modeDesc').innerHTML = '<b>当前档位：' + curMode + '</b> —— ' + MODE_DESC[curMode];
+  var key = MODE_KEYS[curMode];
+  document.getElementById('anchorBody').innerHTML = CASES.map(function(c){
+    var r = c[key];
+    var off = (r.m.indexOf('Qwen') === 0) ? '（<span style="color:var(--warn)">已停用</span>）' : '';
+    return '<tr><td class="model">' + c.cat + '</td><td>' + c.comp + '</td>'
+         + '<td><b>' + r.m + '</b>' + off + '</td><td>' + r.d + '</td></tr>';
+  }).join('');
+}
+document.getElementById('modeSw').addEventListener('click', function(ev){
+  var btn = ev.target.closest('button');
+  if (!btn) return;
+  curMode = btn.getAttribute('data-mode');
+  document.querySelectorAll('#modeSw button').forEach(function(b){
+    b.classList.toggle('active', b === btn);
+  });
+  renderSwitch();
+});
+renderSwitch();
 </script>
 </body>
 </html>

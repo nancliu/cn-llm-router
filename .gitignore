@@ -18,5 +18,6 @@ build/
 *.egg-info/
 sheets/
 reports/_shots/
+reports/_backup/
 reports/mm-eval-*.json
 reports/version-monitor-*.json
