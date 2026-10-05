@@ -61,7 +61,7 @@ def _port_in_use(host: str, port: int) -> bool:
 
 
 def _find_pid_on_port(port: int) -> Optional[int]:
-    """通过 netstat 找到监听该端口的进程 PID（仅 TCP LISTENING）。"""
+    """找到监听该端口的进程 PID（Windows netstat；POSIX 读 /proc/net/tcp + fd inode）。"""
     if os.name == "nt":
         try:
             out = subprocess.run(
@@ -79,6 +79,37 @@ def _find_pid_on_port(port: int) -> Optional[int]:
                     return int(parts[-1])
                 except ValueError:
                     continue
+        return None
+    # POSIX：/proc/net/tcp(+tcp6) 找 LISTEN(0A) 的 inode，再扫各进程 fd 反查 socket:[inode]
+    hport = f":{port:04X}"
+    inodes = set()
+    for netf in ("/proc/net/tcp", "/proc/net/tcp6"):
+        try:
+            with open(netf, "r", encoding="utf-8", errors="replace") as f:
+                for line in f.readlines()[1:]:
+                    parts = line.split()
+                    if len(parts) < 10 or parts[3] != "0A":
+                        continue
+                    if parts[1].endswith(hport):
+                        inodes.add(parts[9])
+        except OSError:
+            continue
+    if not inodes:
+        return None
+    for d in os.listdir("/proc"):
+        if not d.isdigit():
+            continue
+        fd_dir = f"/proc/{d}/fd"
+        try:
+            for fd in os.listdir(fd_dir):
+                try:
+                    m = re.match(r"socket:\[(\d+)\]", os.readlink(f"{fd_dir}/{fd}"))
+                except OSError:
+                    continue
+                if m and m.group(1) in inodes:
+                    return int(d)
+        except OSError:
+            continue
     return None
 
 
@@ -97,12 +128,10 @@ def _is_router_process(pid: int) -> bool:
             return False
     else:
         try:
-            out = subprocess.run(
-                ["ps", "-p", str(pid), "-o", "command="],
-                capture_output=True, text=True, timeout=15,
-            )
-            cmdline = out.stdout or ""
-        except Exception:
+            # /proc/<pid>/cmdline 为 NUL 分隔完整命令行，不受 ps 终端宽度截断影响
+            with open(f"/proc/{pid}/cmdline", "rb") as f:
+                cmdline = f.read().replace(b"\0", b" ").decode("utf-8", errors="replace")
+        except OSError:
             return False
     return bool(re.search(r"cn[_-]llm[_-]router.*serve", cmdline, re.IGNORECASE))
 
