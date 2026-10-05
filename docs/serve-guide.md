@@ -15,6 +15,18 @@ powershell -ExecutionPolicy Bypass -File scripts\start-gateway.ps1
 
 脚本做的事：① 清理当前进程的 `DATABASE_URL` 环境变量 → ② 启动 serve（单实例守护，自动关旧启新）→ ③ 启动 litellm（若使用 Claude Code 桥接）→ ④ 就绪探测。日志：`serve.out.log` / `serve.err.log` / `litellm.out.log` / `litellm.err.log`。
 
+**隔天/掉线自愈（Windows 计划任务，2026-10-05 注册）**：
+
+```powershell
+schtasks /Query /TN "cn-llm-router-gateway-check"     # 每 10 分钟：检查 10041/4000，挂了自动拉起
+schtasks /Query /TN "cn-llm-router-gateway-startup"   # 登录 Windows 时自动启动网关
+# 撤销：
+schtasks /Delete /TN "cn-llm-router-gateway-check" /F
+schtasks /Delete /TN "cn-llm-router-gateway-startup" /F
+```
+
+serve/litellm 是普通进程，非 Windows 服务：关机/重启/终端会话清理都会导致进程消失（**隔天掉线的根因**）。计划任务 = 登录自启 + 每 10 分钟自愈；`check-gateway.ps1` 用锁文件防并发重复重启（120s 窗口）。
+
 **仅 serve（无 litellm）**：
 
 ```bash
