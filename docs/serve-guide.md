@@ -94,7 +94,8 @@ Windows 下日志写在前台终端；后台运行可重定向到文件（`pytho
 
 ## 3. 接入 Codex（推荐，零转换层）
 
-Codex 原生使用 OpenAI Chat 格式，`config.toml` 支持自定义 `model_provider`，**无需任何协议转换**：
+Codex 原生使用 OpenAI Responses 协议（新版已移除 `wire_api = "chat"`，见
+https://github.com/openai/codex/discussions/7782），`config.toml` 支持自定义 `model_provider`，**无需任何协议转换**：
 
 ```toml
 # ~/.codex/config.toml（或项目 .codex/config.toml）
@@ -104,15 +105,15 @@ model_provider = "cn-llm-router"
 [model_providers.cn-llm-router]
 name = "cn-llm-router"
 base_url = "http://127.0.0.1:10041/v1"
-wire_api = "chat"
-# 本地网关无外部 key；若 serve 启用了 --token，这里填该 token
-env_key = "CN_LLM_ROUTER_UPSTREAM_KEY"
+wire_api = "responses"
+# 本地网关未启用 token 认证时省略本行；若 serve 启用了 --token，取消注释并设置同名环境变量
+# env_key = "CN_LLM_ROUTER_UPSTREAM_KEY"
 ```
 
 然后：
 
 ```bash
-export CN_LLM_ROUTER_UPSTREAM_KEY=my-secret   # 与 serve --token 一致；未启用认证可省略
+# serve 未启用认证时无需任何环境变量（旧版示例的 CN_LLM_ROUTER_UPSTREAM_KEY 已废弃）
 cn-llm-router serve &                          # 先启动网关
 codex exec "重构这个模块并补测试"
 ```
