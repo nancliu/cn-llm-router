@@ -11,12 +11,52 @@ from __future__ import annotations
 import logging
 
 from .config import RouterConfig, key_available
-from .data_loader import RouterData
+from .data_loader import ModelSpec, RouterData
 from .types import COMPLEXITIES, ModelChoice, Recommendation, STRATEGIES
 
 logger = logging.getLogger("cn_llm_router.selector")
 
 MIN_SCORE_GATE = 50.0  # 性价比优先门槛
+RESERVE_OUTPUT_TOKENS = 8192  # 预留输出空间（输入窗口判断时的安全 buffer）
+
+
+def _parse_context_window(raw: str) -> int | None:
+    """解析 models.csv 的 context_window 字符串为 tokens 上限；无法解析返回 None（视为未知，不过滤）。
+
+    支持格式：'1M tokens'、'256K'、'1M tokens (max output 384K)'、
+    '1M (max input 960K/output 64K)'（取 max input 更精确）。
+    '待补充'/'待核实'/'N/A' 等无明确数值 → None。
+    """
+    import re
+
+    if not raw:
+        return None
+    s = raw.strip()
+    # 优先 max input（比总窗口更严格，更贴近真实可输入量）
+    m = re.search(r"max\s*input\s*([\d.]+)\s*([MK]?)", s, re.IGNORECASE)
+    if m:
+        return _to_tokens(m.group(1), m.group(2))
+    m = re.search(r"(\d+(?:\.\d+)?)\s*([MK])", s, re.IGNORECASE)
+    if m:
+        return _to_tokens(m.group(1), m.group(2))
+    return None
+
+
+def _to_tokens(num: str, unit: str) -> int:
+    v = float(num)
+    if unit.upper() == "M":
+        return int(v * 1_048_576)
+    if unit.upper() == "K":
+        return int(v * 1_024)
+    return int(v)
+
+
+def _window_ok(spec: ModelSpec, input_tokens: int) -> bool:
+    """输入 + 预留输出是否在模型窗口内；窗口未知（None）视为不过滤。"""
+    w = _parse_context_window(spec.context_window)
+    if w is None:
+        return True
+    return input_tokens + RESERVE_OUTPUT_TOKENS <= w
 
 
 def select(
@@ -27,6 +67,7 @@ def select(
     strategy: str,
     cfg: RouterConfig,
     availability_filter: bool | None = None,
+    input_tokens: int | None = None,
 ) -> Recommendation:
     if category not in data.categories:
         raise ValueError(f"未知任务类别: {category}（可用: {sorted(data.categories)}）")
@@ -36,7 +77,9 @@ def select(
         raise ValueError(f"未知策略: {strategy}（可用: {STRATEGIES}）")
 
     filter_on = cfg.availability_filter if availability_filter is None else availability_filter
-    eligible, full_rank = _rank(data, category, complexity, strategy, filter_on, cfg)
+    eligible, full_rank, window_removed = _rank(
+        data, category, complexity, strategy, filter_on, cfg, input_tokens
+    )
 
     if not eligible:
         hint = (
@@ -48,6 +91,11 @@ def select(
     primary = eligible[0]
     backup = _pick_backup(eligible, primary, data)
     notice: list[str] = []
+    if window_removed:
+        notice.append(
+            f"输入约 {input_tokens} tokens：过滤 {window_removed} 个窗口不足的候选模型"
+            f"（预留输出 {RESERVE_OUTPUT_TOKENS} tokens）"
+        )
     if filter_on and full_rank and full_rank[0].logical_name != primary.logical_name:
         skipped = full_rank[0]
         prov = cfg.providers.get(skipped.logical_name)
@@ -92,9 +140,10 @@ def select(
 
 
 def _rank(
-    data: RouterData, category: str, complexity: str, strategy: str, filter_on: bool, cfg: RouterConfig
-) -> tuple[list[ModelChoice], list[ModelChoice]]:
-    """返回 (可用集排序, 全量集排序)；全量集仅用于 notice 对照。"""
+    data: RouterData, category: str, complexity: str, strategy: str,
+    filter_on: bool, cfg: RouterConfig, input_tokens: int | None = None,
+) -> tuple[list[ModelChoice], list[ModelChoice], int]:
+    """返回 (窗口过滤后可用集, 全量集排序, 窗口过滤掉的候选数)；全量集仅用于 notice 对照。"""
     candidates = []
     for logical, spec in data.models.items():
         score = data.scores.get((category, complexity, logical))
@@ -125,10 +174,21 @@ def _rank(
         candidates.append((logical, spec.vendor, score, cost, comm, vlm_used))
 
     full = _sort(candidates, strategy, complexity)
-    avail = [c for c in full if _available(c[0], cfg)] if filter_on else full
+
+    # 窗口过滤（issue #3）：输入 + 预留输出超过模型窗口的候选剔除；
+    # 全被剔除时回退全集（保底，由 notice/serve 层决定是否 400 提示）。
+    window_removed = 0
+    windowed = full
+    if input_tokens is not None:
+        windowed = [c for c in full if _window_ok(data.models[c[0]], input_tokens)]
+        window_removed = len(full) - len(windowed)
+        if not windowed:
+            windowed = full
+
+    avail = [c for c in windowed if _available(c[0], cfg)] if filter_on else windowed
     return [_to_choice(c, i + 1, strategy, cfg) for i, c in enumerate(avail)], [
         _to_choice(c, i + 1, strategy, cfg) for i, c in enumerate(full)
-    ]
+    ], window_removed
 
 
 def _available(logical: str, cfg: RouterConfig) -> bool:

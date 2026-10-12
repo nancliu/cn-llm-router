@@ -33,6 +33,7 @@ from .classifier import Classifier
 from .config import RouterConfig, key_available, load_config
 from .data_loader import RouterData, load_data
 from .gateway import RouterClient, build_client
+from .selector import RESERVE_OUTPUT_TOKENS
 from .selector import select as _select
 from .types import ModelChoice, Recommendation, RouteError
 
@@ -235,6 +236,34 @@ def _extract_classify_text(messages) -> str:
     return ""
 
 
+def _estimate_input_tokens(messages) -> int:
+    """保守估算请求输入 token 量（混合中英文：约 3 字符/token）。
+
+    计入全部消息 content 与 tool_calls 参数字符串；仅用于窗口过滤，不追求精确。
+    """
+    total_chars = 0
+    for m in messages or []:
+        if not isinstance(m, dict):
+            continue
+        total_chars += len(_content_to_text(m.get("content")))
+        for tc in (m.get("tool_calls") or []):
+            if isinstance(tc, dict):
+                fn = tc.get("function") or {}
+                total_chars += len(str(fn.get("arguments") or ""))
+                total_chars += len(str(fn.get("name") or ""))
+    return max(1, total_chars // 3)
+
+
+def _max_context_window(data: RouterData) -> int | None:
+    """data.models 中可解析 context_window 的最大值；全部无法解析时返回 None。"""
+    from .selector import _parse_context_window
+
+    windows = [
+        w for w in (_parse_context_window(s.context_window) for s in data.models.values()) if w
+    ]
+    return max(windows) if windows else None
+
+
 def _named_choice(data: RouterData, logical: str, rank: int, reason: str) -> ModelChoice:
     """按 logical_name 构造 ModelChoice（点名模式；score=0 表示不参与评分）。"""
     spec = data.models.get(logical)
@@ -280,13 +309,24 @@ def _make_handler(cfg: RouterConfig, data: RouterData, classifier: Classifier,
             })
 
         # ---------- 路由 ----------
-        def _recommendation(self, model_arg: str, text: str) -> tuple[Recommendation, object]:
+        def _recommendation(self, model_arg: str, text: str, messages=None) -> tuple[Recommendation, object]:
             """判类 + 选型：auto → select 推荐；logical_name → 点名主选 + 同类别备选。"""
             clf = classifier.classify(text)
             if model_arg in (None, "", AUTO_MODEL):
+                input_tokens = _estimate_input_tokens(messages)
+                # 全部模型窗口都装不下 → 前置 400，避免透传上游 400/502（issue #3）
+                max_win = _max_context_window(data)
+                if max_win and input_tokens + RESERVE_OUTPUT_TOKENS > max_win:
+                    raise ServeError(
+                        400,
+                        f"输入约 {input_tokens} tokens，已超过当前可用模型最大窗口 "
+                        f"{max_win // 1024}K（预留输出 {RESERVE_OUTPUT_TOKENS} tokens）。"
+                        "请精简会话或新开上下文。",
+                        code="context_overflow",
+                    )
                 try:
                     rec = _select(data, clf.category, clf.complexity, strategy=strategy,
-                                  cfg=cfg, availability_filter=True)
+                                  cfg=cfg, availability_filter=True, input_tokens=input_tokens)
                 except ValueError as e:
                     raise ServeError(400, str(e), code="no_available_models") from None
                 return rec, clf
@@ -348,6 +388,7 @@ def _make_handler(cfg: RouterConfig, data: RouterData, classifier: Classifier,
                         usage = resp.usage.model_dump() if resp.usage else None
                     except Exception:
                         pass
+                    est_in = _estimate_input_tokens(kwargs.get("messages"))
                     self._record_route({
                         "ts": time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(t0)),
                         "category": category, "complexity": complexity,
@@ -355,6 +396,7 @@ def _make_handler(cfg: RouterConfig, data: RouterData, classifier: Classifier,
                         "strategy": strategy, "mode": "auto" if category else "named",
                         "elapsed_s": round(time.time() - t0, 2),
                         "tokens": usage.get("total_tokens") if isinstance(usage, dict) else None,
+                        "input_tokens_est": est_in,
                     })
                     return resp
                 except Exception as e:  # noqa: BLE001 —— 按类型判定是否可切
@@ -590,7 +632,7 @@ def _make_handler(cfg: RouterConfig, data: RouterData, classifier: Classifier,
                 else:
                     system["content"] = str(system.get("content") or "") + "\n" + instructions
             text = _extract_classify_text(messages)
-            rec, _clf = self._recommendation(str(model_arg), text)
+            rec, _clf = self._recommendation(str(model_arg), text, messages)
             kwargs: dict = {"messages": messages, "stream": False}  # 内部聚合，输出按需转 SSE
             tools = self._responses_tools_to_chat(body.get("tools"))
             if tools:
@@ -662,7 +704,7 @@ def _make_handler(cfg: RouterConfig, data: RouterData, classifier: Classifier,
                 model_arg = body.get("model", AUTO_MODEL)
                 stream = bool(body.get("stream", False))
                 text = _extract_classify_text(body.get("messages"))
-                rec, clf = self._recommendation(str(model_arg), text)
+                rec, clf = self._recommendation(str(model_arg), text, body.get("messages"))
                 kwargs = dict(body)
                 kwargs.pop("model", None)
                 resp = self._forward_raw(rec, kwargs, stream,

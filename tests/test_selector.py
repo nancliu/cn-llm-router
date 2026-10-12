@@ -127,3 +127,50 @@ def test_unknown_complexity(data, cfg):
 def test_unknown_strategy(data, cfg):
     with pytest.raises(ValueError, match="未知策略"):
         select("程序编码", "低", strategy="随机", availability_filter=False, config=cfg)
+
+
+# ---- 窗口感知过滤（issue #3） ----
+
+def test_parse_context_window():
+    from cn_llm_router.selector import _parse_context_window
+
+    assert _parse_context_window("1M tokens") == 1048576
+    assert _parse_context_window("256K") == 262144
+    assert _parse_context_window("1M tokens (max output 384K)") == 1048576
+    # max input 优先于总窗口（更贴近真实可输入量）
+    assert _parse_context_window("1M (max input 960K/output 64K)") == 983040
+    assert _parse_context_window("待补充") is None
+    assert _parse_context_window("") is None
+
+
+def test_input_tokens_none_keeps_ordering(data, cfg):
+    """向后兼容：不传 input_tokens 时排序与既有行为一致。"""
+    a = select("程序编码", "低", strategy="平衡", availability_filter=False, config=cfg)
+    b = select("程序编码", "低", strategy="平衡", availability_filter=False,
+               config=cfg, input_tokens=None)
+    assert a.primary.logical_name == b.primary.logical_name
+    assert all("窗口不足" not in n for n in a.notice)
+
+
+def test_small_window_model_filtered_at_large_input(data, cfg, monkeypatch):
+    """300K 输入下，把主选 GLM-5.3-Flash 窗口改成 128K，它应被窗口过滤剔除。"""
+    from cn_llm_router.selector import select as raw_select
+
+    monkeypatch.setattr(data.models["GLM-5.3-Flash"], "context_window", "128K")
+    rec = raw_select(data, "程序编码", "低", strategy="平衡", cfg=cfg,
+                     availability_filter=False, input_tokens=300_000)
+    assert rec.primary.logical_name != "GLM-5.3-Flash"
+    assert any("窗口不足" in n for n in rec.notice)
+
+
+def test_all_window_overflow_fallback_to_full(data, cfg, monkeypatch):
+    """全部候选窗口不足时回退全集（保底不报错），notice 记录过滤数。"""
+    from cn_llm_router.selector import select as raw_select
+
+    for m in data.models.values():
+        if "1M" in (m.context_window or ""):
+            monkeypatch.setattr(m, "context_window", "128K")
+    rec = raw_select(data, "程序编码", "低", strategy="平衡", cfg=cfg,
+                    availability_filter=False, input_tokens=300_000)
+    assert rec.primary.logical_name  # 回退后仍有主选
+    assert any("过滤" in n for n in rec.notice)

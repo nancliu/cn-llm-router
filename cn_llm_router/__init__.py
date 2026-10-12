@@ -99,13 +99,18 @@ def select(
     *,
     strategy: str = "平衡",
     availability_filter: bool | None = None,
+    input_tokens: int | None = None,
     config: RouterConfig | None = None,
 ) -> Recommendation:
-    """依据评分矩阵与策略档位选出主选/备选（确定性，不依赖飞书表格推荐区）。"""
+    """依据评分矩阵与策略档位选出主选/备选（确定性，不依赖飞书表格推荐区）。
+
+    input_tokens 传入时按模型上下文窗口过滤候选（issue #3：长会话不误选小窗口模型）。
+    """
     from .selector import select as _select
 
     cfg, data = _ensure(config)
-    return _select(data, category, complexity, strategy=strategy, cfg=cfg, availability_filter=availability_filter)
+    return _select(data, category, complexity, strategy=strategy, cfg=cfg,
+                   availability_filter=availability_filter, input_tokens=input_tokens)
 
 
 def route(
