@@ -84,6 +84,7 @@ class ProviderSpec:
     timeout: float = 60.0
     backend: str = "openai"
     enabled: bool = True   # False = 显式停用（套餐未购买/临时下线），不参与路由与 /v1/models
+    supports_image: bool = False  # True = 支持多模态图片理解（image_url / input_image part）
 
 
 @dataclass
@@ -176,6 +177,7 @@ def load_config(config_dir: Optional[str] = None) -> RouterConfig:
             timeout=float(spec.get("timeout", 60.0)),
             backend=str(spec.get("backend", "openai")),
             enabled=bool(spec.get("enabled", True)),
+            supports_image=bool(spec.get("multimodal", spec.get("supports_image", False))),
         )
     cfg.providers = providers
 

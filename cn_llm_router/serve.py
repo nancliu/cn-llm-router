@@ -236,6 +236,28 @@ def _extract_classify_text(messages) -> str:
     return ""
 
 
+def _has_image(messages) -> bool:
+    """检测 messages 里是否包含图片（image_url / input_image part 或 base64 data URL）。"""
+    import re
+    b64_image_re = re.compile(r"data:image/[a-zA-Z]+;base64,")
+    for m in messages or []:
+        if not isinstance(m, dict):
+            continue
+        content = m.get("content")
+        if isinstance(content, list):
+            for p in content:
+                if not isinstance(p, dict):
+                    continue
+                ptype = str(p.get("type", ""))
+                if "image" in ptype or p.get("image_url") or p.get("input_image"):
+                    return True
+        else:
+            txt = str(content or "")
+            if b64_image_re.search(txt):
+                return True
+    return False
+
+
 def _estimate_input_tokens(messages) -> int:
     """保守估算请求输入 token 量（混合中英文：约 3 字符/token）。
 
@@ -352,11 +374,37 @@ def _make_handler(cfg: RouterConfig, data: RouterData, classifier: Classifier,
                         "请精简会话或新开上下文。",
                         code="context_overflow",
                     )
+                # 检测到图片 → 只从支持多模态的模型里选
+                image_mode = _has_image(messages)
+                if image_mode:
+                    multimodal_logicals = {
+                        name for name, prov in cfg.providers.items()
+                        if prov.supports_image and prov.enabled and key_available(prov)
+                    }
+                    if not multimodal_logicals:
+                        raise ServeError(
+                            400,
+                            "请求包含图片，但当前配置里没有支持多模态的模型（providers.yaml 需标记 multimodal: true）。",
+                            code="no_multimodal_model",
+                        )
+                    # 临时过滤 data.models：只保留多模态模型
+                    original_models = data.models
+                    data.models = {k: v for k, v in data.models.items() if k in multimodal_logicals}
+                    if not data.models:
+                        data.models = original_models
+                        raise ServeError(
+                            400,
+                            "请求包含图片，但可用的多模态模型在评分矩阵中无评分数据。",
+                            code="no_multimodal_score",
+                        )
                 try:
                     rec = _select(data, clf.category, clf.complexity, strategy=strategy,
                                   cfg=cfg, availability_filter=True, input_tokens=input_tokens)
                 except ValueError as e:
                     raise ServeError(400, str(e), code="no_available_models") from None
+                finally:
+                    if image_mode:
+                        data.models = original_models  # 恢复
                 return rec, clf
 
             prov = cfg.providers.get(model_arg)
