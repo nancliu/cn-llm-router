@@ -272,6 +272,8 @@ def _compress_messages_images(messages, max_width: int = 1024, quality: int = 85
     import io
     b64_image_re = re.compile(r"data:image/([a-zA-Z]+);base64,(.+)")
 
+    logger.info("_compress_messages_images 入口：messages=%d 条", len(messages or []))
+
     try:
         from PIL import Image
     except ImportError:
@@ -289,6 +291,7 @@ def _compress_messages_images(messages, max_width: int = 1024, quality: int = 85
             url = str(p.get("image_url", {}).get("url", ""))
             match = b64_image_re.match(url)
             if not match:
+                logger.info("压缩跳过：非 base64 data URL，前缀=%s", url[:50])
                 continue
             fmt, b64data = match.group(1), match.group(2)
             # 原 base64 大小
@@ -311,6 +314,7 @@ def _compress_messages_images(messages, max_width: int = 1024, quality: int = 85
                 img.save(buf, format="JPEG", quality=quality, optimize=True)
                 new_b64 = base64.b64encode(buf.getvalue()).decode("ascii")
                 p["image_url"]["url"] = f"data:image/jpeg;base64,{new_b64}"
+                logger.info("图片压缩：%d KB → %d KB", len(orig_bytes)//1024, len(buf.getvalue())//1024)
             except Exception:
                 continue  # 压缩失败就保留原图
 
@@ -434,7 +438,8 @@ def _make_handler(cfg: RouterConfig, data: RouterData, classifier: Classifier,
                         code="context_overflow",
                     )
                 # 检测到图片 → 只从支持多模态的模型里选
-                image_mode = _has_image(messages)
+                # 两种信号：1) messages 里有 image part；2) 分类器识别到"多模态理解"类别
+                image_mode = _has_image(messages) or (clf.category == "多模态理解")
                 if image_mode:
                     multimodal_logicals = {
                         name for name, prov in cfg.providers.items()
