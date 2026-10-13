@@ -258,24 +258,67 @@ def _has_image(messages) -> bool:
     return False
 
 
+def _compress_data_url(url: str, b64_image_re, max_width: int, quality: int,
+                       max_size_kb: int):
+    """压缩单个 data:image/...;base64,... URL。返回压缩后的 URL；无需压缩或失败返回 None。"""
+    import base64, binascii, io
+    from PIL import Image
+    match = b64_image_re.match(url)
+    if not match:
+        return None
+    fmt, b64data = match.group(1), match.group(2)
+    try:
+        orig_bytes = base64.b64decode(b64data)
+    except (binascii.Error, ValueError):
+        return None
+    if len(orig_bytes) < max_size_kb * 1024:
+        return None  # 已经够小
+    try:
+        img = Image.open(io.BytesIO(orig_bytes))
+        w, h = img.size
+        if w > max_width:
+            new_h = int(h * max_width / w)
+            img = img.resize((max_width, new_h), Image.LANCZOS)
+        buf = io.BytesIO()
+        img = img.convert("RGB")
+        img.save(buf, format="JPEG", quality=quality, optimize=True)
+        new_b64 = base64.b64encode(buf.getvalue()).decode("ascii")
+        logger.info("图片压缩：%d KB → %d KB", len(orig_bytes) // 1024, len(buf.getvalue()) // 1024)
+        return f"data:image/jpeg;base64,{new_b64}"
+    except Exception:
+        return None
+
+
 def _compress_messages_images(messages, max_width: int = 1024, quality: int = 85,
                                max_size_kb: int = 500) -> list:
     """遍历 messages，把过大的 base64 图片压缩（协议适配：OpenAI 协议传原图，国产模型吃不下）。
 
-    - 只压缩 image_url part 里的 base64 data URL
-    - 原图 < max_size_kb 不处理
-    - 压缩后替换为 JPEG data URL
+    覆盖两种位置：
+    - list content 里 image_url part 的 base64 data URL
+    - string content（tool result）里内嵌的 base64 data URL（Codex Read 图片后走这里）
+    原图 < max_size_kb 不处理；压缩后替换为 JPEG data URL。
     """
-    import base64
-    import binascii
     import re
-    import io
     b64_image_re = re.compile(r"data:image/([a-zA-Z]+);base64,(.+)")
 
     logger.info("_compress_messages_images 入口：messages=%d 条", len(messages or []))
 
+    # 调试：打印每条 message 的 content 类型
+    for i, m in enumerate(messages or []):
+        if not isinstance(m, dict):
+            continue
+        content = m.get("content")
+        role = m.get("role", "?")
+        if isinstance(content, list):
+            types = [p.get("type", "?") for p in content if isinstance(p, dict)]
+            logger.info("  msg[%d] role=%s content=list types=%s", i, role, types)
+        else:
+            txt = str(content or "")
+            has_b64 = bool(b64_image_re.search(txt))
+            logger.info("  msg[%d] role=%s content=string len=%d has_b64=%s", i, role, len(txt), has_b64)
+
     try:
-        from PIL import Image
+        from PIL import Image  # noqa: F401
     except ImportError:
         return messages  # 没装 PIL 就不压缩
 
@@ -283,40 +326,28 @@ def _compress_messages_images(messages, max_width: int = 1024, quality: int = 85
         if not isinstance(m, dict):
             continue
         content = m.get("content")
-        if not isinstance(content, list):
-            continue
-        for p in content:
-            if not isinstance(p, dict) or p.get("type") != "image_url":
-                continue
-            url = str(p.get("image_url", {}).get("url", ""))
-            match = b64_image_re.match(url)
-            if not match:
-                logger.info("压缩跳过：非 base64 data URL，前缀=%s", url[:50])
-                continue
-            fmt, b64data = match.group(1), match.group(2)
-            # 原 base64 大小
-            try:
-                orig_bytes = base64.b64decode(b64data)
-            except (binascii.Error, ValueError):
-                continue
-            if len(orig_bytes) < max_size_kb * 1024:
-                continue  # 已经够小
 
-            # 压缩
-            try:
-                img = Image.open(io.BytesIO(orig_bytes))
-                w, h = img.size
-                if w > max_width:
-                    new_h = int(h * max_width / w)
-                    img = img.resize((max_width, new_h), Image.LANCZOS)
-                buf = io.BytesIO()
-                img = img.convert("RGB")
-                img.save(buf, format="JPEG", quality=quality, optimize=True)
-                new_b64 = base64.b64encode(buf.getvalue()).decode("ascii")
-                p["image_url"]["url"] = f"data:image/jpeg;base64,{new_b64}"
-                logger.info("图片压缩：%d KB → %d KB", len(orig_bytes)//1024, len(buf.getvalue())//1024)
-            except Exception:
-                continue  # 压缩失败就保留原图
+        # 情况 1：list content 里的 image_url part
+        if isinstance(content, list):
+            for p in content:
+                if not isinstance(p, dict) or p.get("type") != "image_url":
+                    continue
+                url = str(p.get("image_url", {}).get("url", ""))
+                if not b64_image_re.match(url):
+                    continue
+                new_url = _compress_data_url(url, b64_image_re, max_width, quality, max_size_kb)
+                if new_url:
+                    p["image_url"]["url"] = new_url
+
+        # 情况 2：string content 里内嵌的 base64 data URL（Codex tool result）
+        elif isinstance(content, str) and "base64," in content:
+            # 用 base64 字符集限定，避免 .+ 贪婪跨多个 data URL
+            b64_inline = re.compile(r"data:image/[a-zA-Z]+;base64,[A-Za-z0-9+/=]+")
+            def _sub(mo):
+                full = mo.group(0)
+                new = _compress_data_url(full, b64_image_re, max_width, quality, max_size_kb)
+                return new if new else full
+            m["content"] = b64_inline.sub(_sub, content)
 
     return messages
 
