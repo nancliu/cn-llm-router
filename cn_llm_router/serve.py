@@ -278,7 +278,8 @@ def _estimate_input_tokens(messages) -> int:
                 total_text_chars += len(str(fn.get("arguments") or ""))
                 total_text_chars += len(str(fn.get("name") or ""))
 
-    return max(1, total_text_chars // 3 + image_count * IMAGE_TOKENS)
+    # 中文 1 token ≈ 1.5 字符，英文 ≈ 4 字符；混合内容平均取 2 字符/token（保守估算，提前拦截）
+    return max(1, total_text_chars // 2 + image_count * IMAGE_TOKENS)
 
 
 def _max_context_window(data: RouterData) -> int | None:
