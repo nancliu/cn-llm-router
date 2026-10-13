@@ -258,6 +258,65 @@ def _has_image(messages) -> bool:
     return False
 
 
+def _compress_messages_images(messages, max_width: int = 1024, quality: int = 85,
+                               max_size_kb: int = 500) -> list:
+    """遍历 messages，把过大的 base64 图片压缩（协议适配：OpenAI 协议传原图，国产模型吃不下）。
+
+    - 只压缩 image_url part 里的 base64 data URL
+    - 原图 < max_size_kb 不处理
+    - 压缩后替换为 JPEG data URL
+    """
+    import base64
+    import binascii
+    import re
+    import io
+    b64_image_re = re.compile(r"data:image/([a-zA-Z]+);base64,(.+)")
+
+    try:
+        from PIL import Image
+    except ImportError:
+        return messages  # 没装 PIL 就不压缩
+
+    for m in messages or []:
+        if not isinstance(m, dict):
+            continue
+        content = m.get("content")
+        if not isinstance(content, list):
+            continue
+        for p in content:
+            if not isinstance(p, dict) or p.get("type") != "image_url":
+                continue
+            url = str(p.get("image_url", {}).get("url", ""))
+            match = b64_image_re.match(url)
+            if not match:
+                continue
+            fmt, b64data = match.group(1), match.group(2)
+            # 原 base64 大小
+            try:
+                orig_bytes = base64.b64decode(b64data)
+            except (binascii.Error, ValueError):
+                continue
+            if len(orig_bytes) < max_size_kb * 1024:
+                continue  # 已经够小
+
+            # 压缩
+            try:
+                img = Image.open(io.BytesIO(orig_bytes))
+                w, h = img.size
+                if w > max_width:
+                    new_h = int(h * max_width / w)
+                    img = img.resize((max_width, new_h), Image.LANCZOS)
+                buf = io.BytesIO()
+                img = img.convert("RGB")
+                img.save(buf, format="JPEG", quality=quality, optimize=True)
+                new_b64 = base64.b64encode(buf.getvalue()).decode("ascii")
+                p["image_url"]["url"] = f"data:image/jpeg;base64,{new_b64}"
+            except Exception:
+                continue  # 压缩失败就保留原图
+
+    return messages
+
+
 def _estimate_input_tokens(messages) -> int:
     """保守估算请求输入 token 量（混合中英文：约 3 字符/token）。
 
@@ -709,6 +768,8 @@ def _make_handler(cfg: RouterConfig, data: RouterData, classifier: Classifier,
                     system["content"] = str(system.get("content") or "") + "\n" + instructions
             text = _extract_classify_text(messages)
             rec, _clf = self._recommendation(str(model_arg), text, messages)
+            # 转发前压缩大图片（协议适配：Codex 发原图，国产模型吃不下）
+            messages = _compress_messages_images(messages)
             kwargs: dict = {"messages": messages, "stream": False}  # 内部聚合，输出按需转 SSE
             tools = self._responses_tools_to_chat(body.get("tools"))
             if tools:
@@ -781,6 +842,8 @@ def _make_handler(cfg: RouterConfig, data: RouterData, classifier: Classifier,
                 stream = bool(body.get("stream", False))
                 text = _extract_classify_text(body.get("messages"))
                 rec, clf = self._recommendation(str(model_arg), text, body.get("messages"))
+                # 转发前压缩大图片
+                body["messages"] = _compress_messages_images(body.get("messages"))
                 kwargs = dict(body)
                 kwargs.pop("model", None)
                 resp = self._forward_raw(rec, kwargs, stream,
