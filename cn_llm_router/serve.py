@@ -240,18 +240,45 @@ def _estimate_input_tokens(messages) -> int:
     """保守估算请求输入 token 量（混合中英文：约 3 字符/token）。
 
     计入全部消息 content 与 tool_calls 参数字符串；仅用于窗口过滤，不追求精确。
+    多模态图片不按 base64 字符数算（会严重高估），每张按固定 1500 tokens 估算。
     """
-    total_chars = 0
+    import re
+    # 匹配 data:image/xxx;base64,xxxx 形式的内嵌图片
+    b64_image_re = re.compile(r"data:image/[a-zA-Z]+;base64,[A-Za-z0-9+/=]+")
+    IMAGE_TOKENS = 1500  # GPT-4o 单张图约 1-2K tokens，取保守值
+
+    total_text_chars = 0
+    image_count = 0
+
     for m in messages or []:
         if not isinstance(m, dict):
             continue
-        total_chars += len(_content_to_text(m.get("content")))
+        content = m.get("content")
+
+        if isinstance(content, list):
+            # 多模态 content：区分 text part 和 image part
+            for p in content:
+                if not isinstance(p, dict):
+                    continue
+                ptype = str(p.get("type", ""))
+                if "image" in ptype or p.get("image_url") or p.get("input_image"):
+                    image_count += 1
+                else:
+                    txt = p.get("text") or p.get("content") or ""
+                    total_text_chars += len(str(txt))
+        else:
+            # string content：先剥掉内嵌 base64 图片，再算字符
+            txt = _content_to_text(content)
+            txt = b64_image_re.sub(" ", txt)
+            total_text_chars += len(txt)
+
         for tc in (m.get("tool_calls") or []):
             if isinstance(tc, dict):
                 fn = tc.get("function") or {}
-                total_chars += len(str(fn.get("arguments") or ""))
-                total_chars += len(str(fn.get("name") or ""))
-    return max(1, total_chars // 3)
+                total_text_chars += len(str(fn.get("arguments") or ""))
+                total_text_chars += len(str(fn.get("name") or ""))
+
+    return max(1, total_text_chars // 3 + image_count * IMAGE_TOKENS)
 
 
 def _max_context_window(data: RouterData) -> int | None:
