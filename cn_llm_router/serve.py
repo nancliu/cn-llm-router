@@ -289,8 +289,8 @@ def _compress_data_url(url: str, b64_image_re, max_width: int, quality: int,
         return None
 
 
-def _compress_messages_images(messages, max_width: int = 1024, quality: int = 85,
-                               max_size_kb: int = 500) -> list:
+def _compress_messages_images(messages, max_width: int = 768, quality: int = 80,
+                               max_size_kb: int = 200) -> list:
     """遍历 messages，把过大的 base64 图片压缩（协议适配：OpenAI 协议传原图，国产模型吃不下）。
 
     覆盖两种位置：
